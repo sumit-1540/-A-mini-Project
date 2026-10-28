@@ -57,33 +57,52 @@ Double-click:
 
 ---
 
-## ☁️ Cloud Deployment on Render (Single Web Service)
+## ☁️ Cloud Deployment on Render (100% Render — No Aiven Needed!)
 
-SmartShelf is fully configured for zero-CORS single-service deployment on **Render's Free Tier** using a multi-stage Dockerfile that bundles the React frontend and Spring Boot backend into one container.
+SmartShelf is fully configured to run **both the Application and the Database directly on Render**:
+- **Application**: Single Web Service running Docker (React + Spring Boot + ML Engine)
+- **Database**: Native Render PostgreSQL (`grocery_db`, user `sumit`) — provisioned instantly inside Render!
 
 ### Step 1: Push Project to GitHub
 ```bash
+cd C:\Users\sumit\.gemini\antigravity\scratch\smartshelf5
 git remote add origin https://github.com/<YOUR-USERNAME>/<YOUR-REPO-NAME>.git
 git branch -M main
 git push -u origin main
 ```
 
-### Step 2: Deploy on Render
-1. Go to [dashboard.render.com](https://dashboard.render.com) and click **"New +"** $\rightarrow$ **"Web Service"**.
-2. Select your GitHub repository.
-3. Configuration:
-   - **Runtime**: `Docker`
-   - **Dockerfile Path**: `./Dockerfile`
-   - **Instance Type**: `Free`
-4. Set **Environment Variables**:
-   - `SPRING_DATASOURCE_URL`: `jdbc:mysql://<aiven-host>:22069/grocery_db?sslMode=REQUIRED&serverTimezone=UTC&allowPublicKeyRetrieval=true`
-   - `SPRING_DATASOURCE_USERNAME`: `avnadmin`
-   - `SPRING_DATASOURCE_PASSWORD`: `<your-aiven-password>`
-   - `SMARTSHELF_UPI_VPA`: `farandesumit@oksbi`
-   - `SMARTSHELF_MERCHANT_NAME`: `Sumit Farande`
-5. Click **"Deploy Web Service"**.
+---
 
-Render will automatically build the container and provide a live URL: `https://<service-name>.onrender.com`.
+### Step 2: Deploy Both App & Database on Render
+
+#### Option A: 1-Click Blueprint (Recommended)
+1. Go to [dashboard.render.com](https://dashboard.render.com).
+2. Click **"New +"** $\rightarrow$ **"Blueprint"**.
+3. Select your GitHub repository.
+4. Render will read `render.yaml` and **automatically create both**:
+   - The PostgreSQL database (`grocery_db` with user `sumit`)
+   - The Web Service running your Docker application linked directly via `DATABASE_URL`.
+5. Click **"Apply"** — Everything builds, starts, and seeds automatically!
+
+---
+
+#### Option B: Manual Web Service + Render PostgreSQL
+If you prefer creating them individually:
+1. **Create Database**: Click **"New +"** $\rightarrow$ **"PostgreSQL"**:
+   - Name: `smartshelf-db`
+   - Database: `grocery_db`
+   - User: `sumit` (or your choice)
+   - Plan: `Free`
+   - Click **"Create Database"**.
+2. **Create Web Service**: Click **"New +"** $\rightarrow$ **"Web Service"**:
+   - Select your repo, choose **Docker** runtime.
+   - Under **Environment Variables**, add:
+     - `DATABASE_URL`: *(Copy the "Internal Database URL" from your Render database)*
+     - `SMARTSHELF_UPI_VPA`: `farandesumit@oksbi`
+     - `SMARTSHELF_MERCHANT_NAME`: `Sumit Farande`
+   - Click **"Deploy Web Service"**.
+
+When Render starts the app, Spring Boot automatically creates all 16 database tables and seeds all 25 supermarket products, categories, inventory, and login accounts!
 
 ---
 

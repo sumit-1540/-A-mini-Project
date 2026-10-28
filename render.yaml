@@ -1,4 +1,11 @@
-﻿services:
+databases:
+  - name: smartshelf-db
+    databaseName: grocery_db
+    user: sumit
+    plan: free
+    region: oregon
+
+services:
   - type: web
     name: smartshelf-app
     env: docker
@@ -7,12 +14,10 @@
     healthCheckPath: /api/health
     dockerfilePath: ./Dockerfile
     envVars:
-      - key: SPRING_DATASOURCE_URL
-        sync: false
-      - key: SPRING_DATASOURCE_USERNAME
-        sync: false
-      - key: SPRING_DATASOURCE_PASSWORD
-        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smartshelf-db
+          property: connectionString
       - key: SMARTSHELF_UPI_VPA
         value: farandesumit@oksbi
       - key: SMARTSHELF_MERCHANT_NAME
