@@ -28,34 +28,62 @@
    - Live sliders to adjust price, stock, turnover, and reorder levels to see real-time ML inferences.
 
 5. **Complete Jupyter Notebook (`Smart_Retail_Demand_Inventory_Prediction.ipynb`)**:
-   - Fully documented CRISP-DM lifecycle notebook ready to run via `start_jupyter.bat`.
+   - Fully documented CRISP-DM lifecycle notebook.
    - Downloadable directly from the web browser UI.
 
 ---
 
-## 🚀 All Previous Features Kept 100% Intact
+## 🚀 All Features Kept 100% Intact
 
-- 🛒 **POS Billing Terminal**: Barcode scanning, customer search, split payments, thermal receipts.
-- 💬 **WhatsApp Integration**: Instant 1-click WhatsApp tax invoice dispatch & Udhar payment reminders.
+- 🛒 **Dual POS Terminal**: Express Walk-in billing & Daily Customer billing with loyalty points.
+- 💬 **WhatsApp Integration**: Instant 1-click WhatsApp tax invoice dispatch & credit repayment reminders.
 - 🏷️ **Printable Shelf Barcode Stickers**: 60mm &times; 38mm adhesive price tags with Code128 barcodes.
-- 🤖 **Google Gemini Vision AI Slip OCR**: Digitize handwritten paper grocery slips and 1-click transfer to POS.
+- 🤖 **Google Gemini Vision AI Slip OCR**: Digitize handwritten paper grocery slips and transfer to POS.
 - 📦 **Inventory & Audits**: Real-time stock tracking, physical count corrections, audit trails.
-- 👥 **Customer Udhar Khaata**: Credit ledger tracking, repayment receipt generation.
+- 👥 **Customer Credit (Udhar) Khaata**: Credit ledger tracking, repayment receipt generation.
 - 📊 **Executive Analytics & CSV Exports**: Gross profit, COGS, inventory valuation, sales reports.
 
 ---
 
-## 🏃 Quick Start Guide
+## 🏃 Local Quick Start Guide
 
 ### Option A: 1-Click Launch (Recommended)
 Double-click:
-- **`start_all.bat`** — Launches both Spring Boot backend (port 8090) and React frontend (port 5173).
+- **`start_all.bat`** — Launches both Spring Boot backend (port 8093) and React frontend (port 5173).
 
 ### Option B: Individual Components
-- **`start_backend.bat`** — Starts Spring Boot on `http://localhost:8090`
+- **`start_backend.bat`** — Starts Spring Boot on `http://localhost:8093`
 - **`start_frontend.bat`** — Starts React Vite on `http://localhost:5173`
-- **`start_jupyter.bat`** — Launches Jupyter Notebook `Smart_Retail_Demand_Inventory_Prediction.ipynb`
-- **`run_ml_training.bat`** — Re-trains and benchmarks all 6 ML models
+
+---
+
+## ☁️ Cloud Deployment on Render (Single Web Service)
+
+SmartShelf is fully configured for zero-CORS single-service deployment on **Render's Free Tier** using a multi-stage Dockerfile that bundles the React frontend and Spring Boot backend into one container.
+
+### Step 1: Push Project to GitHub
+```bash
+git remote add origin https://github.com/<YOUR-USERNAME>/<YOUR-REPO-NAME>.git
+git branch -M main
+git push -u origin main
+```
+
+### Step 2: Deploy on Render
+1. Go to [dashboard.render.com](https://dashboard.render.com) and click **"New +"** $\rightarrow$ **"Web Service"**.
+2. Select your GitHub repository.
+3. Configuration:
+   - **Runtime**: `Docker`
+   - **Dockerfile Path**: `./Dockerfile`
+   - **Instance Type**: `Free`
+4. Set **Environment Variables**:
+   - `SPRING_DATASOURCE_URL`: `jdbc:mysql://<aiven-host>:22069/grocery_db?sslMode=REQUIRED&serverTimezone=UTC&allowPublicKeyRetrieval=true`
+   - `SPRING_DATASOURCE_USERNAME`: `avnadmin`
+   - `SPRING_DATASOURCE_PASSWORD`: `<your-aiven-password>`
+   - `SMARTSHELF_UPI_VPA`: `farandesumit@oksbi`
+   - `SMARTSHELF_MERCHANT_NAME`: `Sumit Farande`
+5. Click **"Deploy Web Service"**.
+
+Render will automatically build the container and provide a live URL: `https://<service-name>.onrender.com`.
 
 ---
 
