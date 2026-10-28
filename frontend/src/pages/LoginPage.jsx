@@ -7,8 +7,14 @@ import { Button } from '../components/common/Button';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const { error, success } = useToast();
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('admin123');

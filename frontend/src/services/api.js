@@ -10,7 +10,7 @@ const api = axios.create({
 // Request interceptor: attach JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('smartshelf_token');
+    const token = sessionStorage.getItem('smartshelf_token') || localStorage.getItem('smartshelf_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -24,6 +24,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
+      sessionStorage.removeItem('smartshelf_token');
+      sessionStorage.removeItem('smartshelf_user');
       localStorage.removeItem('smartshelf_token');
       localStorage.removeItem('smartshelf_user');
       if (window.location.pathname !== '/login') {

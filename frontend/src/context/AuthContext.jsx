@@ -10,16 +10,20 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      const savedToken = localStorage.getItem('smartshelf_token');
-      const savedUser = localStorage.getItem('smartshelf_user');
+      // Clear legacy localStorage token so prior persistent logins don't bypass login
+      localStorage.removeItem('smartshelf_token');
+      localStorage.removeItem('smartshelf_user');
+
+      const savedToken = sessionStorage.getItem('smartshelf_token');
+      const savedUser = sessionStorage.getItem('smartshelf_user');
       if (savedToken && savedUser) {
         setToken(savedToken);
         setUser(JSON.parse(savedUser));
       }
     } catch (e) {
       console.error('Failed to restore session:', e);
-      localStorage.removeItem('smartshelf_token');
-      localStorage.removeItem('smartshelf_user');
+      sessionStorage.removeItem('smartshelf_token');
+      sessionStorage.removeItem('smartshelf_user');
     } finally {
       setIsLoading(false);
     }
@@ -38,13 +42,15 @@ export const AuthProvider = ({ children }) => {
 
     setToken(data.token);
     setUser(loggedInUser);
-    localStorage.setItem('smartshelf_token', data.token);
-    localStorage.setItem('smartshelf_user', JSON.stringify(loggedInUser));
+    sessionStorage.setItem('smartshelf_token', data.token);
+    sessionStorage.setItem('smartshelf_user', JSON.stringify(loggedInUser));
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
+    sessionStorage.removeItem('smartshelf_token');
+    sessionStorage.removeItem('smartshelf_user');
     localStorage.removeItem('smartshelf_token');
     localStorage.removeItem('smartshelf_user');
   };
