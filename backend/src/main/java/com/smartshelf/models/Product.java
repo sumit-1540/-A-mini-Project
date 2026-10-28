@@ -53,7 +53,7 @@ public class Product {
 
     private LocalDate expiryDate;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "supplier_id")
     private Supplier supplier;
 

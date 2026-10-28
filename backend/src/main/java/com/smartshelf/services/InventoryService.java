@@ -32,12 +32,14 @@ public class InventoryService {
         this.stockAlertService = stockAlertService;
     }
 
+    @Transactional(readOnly = true)
     public List<InventoryResponse> getAllInventory() {
         return inventoryRepository.findAllByOrderByCurrentStockAsc().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<InventoryResponse> getLowStockInventory() {
         return productRepository.findLowStockProducts().stream()
                 .map(p -> inventoryRepository.findByProductId(p.getId()).orElse(null))
@@ -46,6 +48,7 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<InventoryResponse> getExpiringInventory(int days) {
         LocalDate threshold = LocalDate.now().plusDays(days);
         return productRepository.findExpiringProducts(threshold).stream()
@@ -55,6 +58,7 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public InventoryResponse getInventoryByProductId(Long productId) {
         Inventory inventory = inventoryRepository.findByProductId(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product id: " + productId));

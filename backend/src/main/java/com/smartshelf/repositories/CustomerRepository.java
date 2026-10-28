@@ -21,6 +21,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     List<Customer> findByActiveTrue();
 
+    Page<Customer> findByActiveTrue(Pageable pageable);
+
     long countByActiveTrue();
 
     @Query("SELECT c FROM Customer c WHERE c.active = true AND " +
@@ -29,8 +31,9 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> searchCustomers(@Param("query") String query);
 
     @Query("SELECT c FROM Customer c WHERE c.active = true AND " +
-           "(:query IS NULL OR (LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%')) OR c.phone LIKE CONCAT('%', :query, '%')))")
-    Page<Customer> findFilteredCustomers(@Param("query") String query, Pageable pageable);
+           "(LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "c.phone LIKE CONCAT('%', :query, '%'))")
+    Page<Customer> searchCustomers(@Param("query") String query, Pageable pageable);
 
     @Query("SELECT c FROM Customer c WHERE c.active = true AND c.creditBalance > 0 ORDER BY c.creditBalance DESC")
     List<Customer> findCustomersWithPendingCredit();

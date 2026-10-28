@@ -41,12 +41,19 @@ public class CustomerService {
         this.productService = productService;
     }
 
+    @Transactional(readOnly = true)
     public Page<CustomerDTO> getCustomers(String query, Pageable pageable) {
         String cleanQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
-        Page<Customer> page = customerRepository.findFilteredCustomers(cleanQuery, pageable);
+        Page<Customer> page;
+        if (cleanQuery == null) {
+            page = customerRepository.findByActiveTrue(pageable);
+        } else {
+            page = customerRepository.searchCustomers(cleanQuery, pageable);
+        }
         return page.map(this::mapToDTO);
     }
 
+    @Transactional(readOnly = true)
     public List<CustomerDTO> searchCustomers(String query) {
         if (query == null || query.trim().isEmpty()) {
             return customerRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
@@ -56,12 +63,14 @@ public class CustomerService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public CustomerDTO getCustomerById(Long id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
         return mapToDTO(customer);
     }
 
+    @Transactional(readOnly = true)
     public CustomerDTO getCustomerByPhone(String phone) {
         Customer customer = customerRepository.findByPhone(phone.trim())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with phone: " + phone));

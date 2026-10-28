@@ -46,12 +46,23 @@ public class ProductService {
         this.stockAlertService = stockAlertService;
     }
 
+    @Transactional(readOnly = true)
     public Page<ProductResponse> getProducts(String query, Long categoryId, Pageable pageable) {
         String cleanQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
-        Page<Product> productPage = productRepository.findFilteredProducts(cleanQuery, categoryId, pageable);
+        Page<Product> productPage;
+        if (cleanQuery == null && categoryId == null) {
+            productPage = productRepository.findByActiveTrue(pageable);
+        } else if (cleanQuery == null) {
+            productPage = productRepository.findByCategoryIdAndActiveTrue(categoryId, pageable);
+        } else if (categoryId == null) {
+            productPage = productRepository.searchActiveProducts(cleanQuery, pageable);
+        } else {
+            productPage = productRepository.searchActiveProductsByCategory(cleanQuery, categoryId, pageable);
+        }
         return productPage.map(this::mapToResponse);
     }
 
+    @Transactional(readOnly = true)
     public List<ProductResponse> searchActiveProducts(String query) {
         if (query == null || query.trim().isEmpty()) {
             return productRepository.findByActiveTrue().stream()
@@ -63,18 +74,21 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         return mapToResponse(product);
     }
 
+    @Transactional(readOnly = true)
     public ProductResponse getProductByBarcode(String barcode) {
         Product product = productRepository.findByBarcode(barcode)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with barcode: " + barcode));
         return mapToResponse(product);
     }
 
+    @Transactional(readOnly = true)
     public ProductResponse getProductBySku(String sku) {
         Product product = productRepository.findBySku(sku)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with SKU: " + sku));
