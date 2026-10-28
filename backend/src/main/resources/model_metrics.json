@@ -1,0 +1,111 @@
+{
+  "benchmark": [
+    {
+      "model": "XGBoost",
+      "mae": 8.31,
+      "rmse": 11.18,
+      "r2": 0.8423,
+      "mape": 23.98
+    },
+    {
+      "model": "Gradient Boosting",
+      "mae": 8.4,
+      "rmse": 11.25,
+      "r2": 0.8406,
+      "mape": 24.01
+    },
+    {
+      "model": "Random Forest",
+      "mae": 8.58,
+      "rmse": 11.53,
+      "r2": 0.8326,
+      "mape": 25.89
+    },
+    {
+      "model": "Linear Regression",
+      "mae": 10.37,
+      "rmse": 13.09,
+      "r2": 0.7842,
+      "mape": 32.11
+    },
+    {
+      "model": "Ridge Regression",
+      "mae": 10.37,
+      "rmse": 13.09,
+      "r2": 0.7842,
+      "mape": 32.11
+    },
+    {
+      "model": "Decision Tree",
+      "mae": 9.7,
+      "rmse": 13.36,
+      "r2": 0.7751,
+      "mape": 28.04
+    }
+  ],
+  "best_model": "XGBoost",
+  "best_r2": 0.8423,
+  "best_mae": 8.31,
+  "best_rmse": 11.18,
+  "cv_r2_mean": 0.8417,
+  "cv_r2_std": 0.0118,
+  "total_training_records": 1250,
+  "feature_importance": [
+    {
+      "feature": "Inventory_Turnover_Rate",
+      "importance": 0.4162
+    },
+    {
+      "feature": "Status_Enc",
+      "importance": 0.3088
+    },
+    {
+      "feature": "Unit_Price",
+      "importance": 0.1285
+    },
+    {
+      "feature": "Category_Enc",
+      "importance": 0.0325
+    },
+    {
+      "feature": "Below_Reorder",
+      "importance": 0.0277
+    },
+    {
+      "feature": "Price_x_Stock",
+      "importance": 0.0152
+    },
+    {
+      "feature": "Shelf_Life_Days",
+      "importance": 0.0118
+    },
+    {
+      "feature": "Days_Since_Last_Order",
+      "importance": 0.0101
+    },
+    {
+      "feature": "Receive_DayOfWeek",
+      "importance": 0.0089
+    },
+    {
+      "feature": "Supplier_Name_Enc",
+      "importance": 0.0089
+    },
+    {
+      "feature": "Receive_Month",
+      "importance": 0.0086
+    },
+    {
+      "feature": "Reorder_Level",
+      "importance": 0.0083
+    },
+    {
+      "feature": "Stock_Quantity",
+      "importance": 0.0073
+    },
+    {
+      "feature": "Reorder_Quantity",
+      "importance": 0.0072
+    }
+  ]
+}

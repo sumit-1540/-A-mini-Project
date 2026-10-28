@@ -1,0 +1,19 @@
+﻿services:
+  - type: web
+    name: smartshelf-app
+    env: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: SMARTSHELF_UPI_VPA
+        value: farandesumit@oksbi
+      - key: SMARTSHELF_MERCHANT_NAME
+        value: Sumit Farande

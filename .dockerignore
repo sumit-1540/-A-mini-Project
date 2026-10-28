@@ -1,0 +1,8 @@
+﻿.git
+.idea
+*.iml
+backend/target
+frontend/node_modules
+frontend/dist
+ml_engine/*.joblib
+*.log
