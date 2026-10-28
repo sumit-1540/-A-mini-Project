@@ -9,8 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URI;
 
 @Configuration
@@ -21,93 +19,104 @@ public class DataSourceConfig {
     @Value("${DATABASE_URL:#{null}}")
     private String databaseUrl;
 
-    @Value("${spring.datasource.url:#{null}}")
+    @Value("${SPRING_DATASOURCE_URL:#{null}}")
     private String springDatasourceUrl;
 
-    @Value("${spring.datasource.username:root}")
+    @Value("${spring.datasource.url:#{null}}")
+    private String propertiesUrl;
+
+    @Value("${spring.datasource.username:sumit}")
     private String username;
 
-    @Value("${spring.datasource.password:sumit@2006}")
+    @Value("${spring.datasource.password:zexNLulHknNQrD0mLplvY0TQzezaLz3o}")
     private String password;
 
     @Bean
     @Primary
     public DataSource dataSource() {
-        // Case 1: Render native PostgreSQL DATABASE_URL
+        // Priority 1: DATABASE_URL (Render native variable)
         if (databaseUrl != null && !databaseUrl.isBlank()) {
-            try {
-                if (databaseUrl.startsWith("postgres://") || databaseUrl.startsWith("postgresql://")) {
-                    log.info("Detected Render native PostgreSQL DATABASE_URL.");
-                    URI dbUri = new URI(databaseUrl);
-                    String userInfo = dbUri.getUserInfo();
-                    String dbUser = username;
-                    String dbPass = password;
-                    if (userInfo != null && userInfo.contains(":")) {
-                        String[] parts = userInfo.split(":", 2);
-                        dbUser = parts[0];
-                        dbPass = parts[1];
-                    }
-                    int port = dbUri.getPort() == -1 ? 5432 : dbUri.getPort();
-                    String path = dbUri.getPath();
-                    if (path != null && path.startsWith("/")) {
-                        path = path.substring(1);
-                    }
-                    String sslParam = (dbUri.getQuery() != null && dbUri.getQuery().contains("sslmode"))
-                            ? ""
-                            : "?sslmode=require";
-                    String jdbcUrl = "jdbc:postgresql://" + dbUri.getHost() + ":" + port + "/" + path + sslParam;
-                    log.info("Connecting to Render PostgreSQL at: {}:{}", dbUri.getHost(), port);
-                    return DataSourceBuilder.create()
-                            .driverClassName("org.postgresql.Driver")
-                            .url(jdbcUrl)
-                            .username(dbUser)
-                            .password(dbPass)
-                            .build();
-                }
-            } catch (Exception e) {
-                log.warn("Failed to parse DATABASE_URL: {}", e.getMessage());
-            }
+            DataSource ds = buildDataSource(databaseUrl, username, password);
+            if (ds != null) return ds;
         }
 
-        // Case 2: Custom SPRING_DATASOURCE_URL explicitly supplied (e.g. Cloud MySQL / Aiven / TiDB)
+        // Priority 2: SPRING_DATASOURCE_URL (Custom env variable)
         if (springDatasourceUrl != null && !springDatasourceUrl.isBlank()) {
-            log.info("Connecting to configured SPRING_DATASOURCE_URL: {}", springDatasourceUrl);
-            return DataSourceBuilder.create()
-                    .url(springDatasourceUrl)
-                    .username(username)
-                    .password(password)
-                    .build();
+            DataSource ds = buildDataSource(springDatasourceUrl, username, password);
+            if (ds != null) return ds;
         }
 
-        // Case 3: Local MySQL on localhost:3306 (if port is open)
-        if (isPortOpen("localhost", 3306)) {
-            String defaultMysqlUrl = "jdbc:mysql://localhost:3306/grocery_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-            log.info("Local MySQL 3306 detected. Connecting to: {}", defaultMysqlUrl);
-            return DataSourceBuilder.create()
-                    .driverClassName("com.mysql.cj.jdbc.Driver")
-                    .url(defaultMysqlUrl)
-                    .username(username)
-                    .password(password)
-                    .build();
+        // Priority 3: spring.datasource.url from application.properties
+        if (propertiesUrl != null && !propertiesUrl.isBlank()) {
+            DataSource ds = buildDataSource(propertiesUrl, username, password);
+            if (ds != null) return ds;
         }
 
-        // Case 4: Universal Cloud Self-Healing Fallback — Embedded H2 in MySQL Compatibility Mode
-        log.warn("No external database URL configured and local MySQL 3306 unavailable. Starting embedded H2 (MySQL mode) with auto-seeding.");
-        String h2Url = "jdbc:h2:mem:grocery_db;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE";
+        // Ultimate Fallback: Embedded H2
+        log.warn("No database URL resolved. Falling back to embedded H2 database.");
         return DataSourceBuilder.create()
                 .driverClassName("org.h2.Driver")
-                .url(h2Url)
+                .url("jdbc:h2:mem:grocery_db;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE")
                 .username("sa")
                 .password("")
                 .build();
     }
 
-    private boolean isPortOpen(String host, int port) {
-        try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(host, port), 1000);
-            return true;
-        } catch (Exception e) {
-            return false;
+    private DataSource buildDataSource(String rawUrl, String defaultUser, String defaultPass) {
+        String url = rawUrl.trim();
+        String user = defaultUser;
+        String pass = defaultPass;
+        String driver = null;
+
+        if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
+            try {
+                URI uri = new URI(url);
+                String userInfo = uri.getUserInfo();
+                if (userInfo != null && userInfo.contains(":")) {
+                    String[] parts = userInfo.split(":", 2);
+                    user = parts[0];
+                    pass = parts[1];
+                }
+                int port = uri.getPort() == -1 ? 5432 : uri.getPort();
+                String path = uri.getPath();
+                if (path != null && path.startsWith("/")) {
+                    path = path.substring(1);
+                }
+                String host = uri.getHost();
+                url = "jdbc:postgresql://" + host + ":" + port + "/" + path;
+                if (!url.contains("sslmode")) {
+                    url += "?sslmode=require";
+                }
+                driver = "org.postgresql.Driver";
+            } catch (Exception e) {
+                url = url.replaceFirst("^postgres(ql)?://", "jdbc:postgresql://");
+                if (!url.contains("sslmode")) {
+                    url += (url.contains("?") ? "&" : "?") + "sslmode=require";
+                }
+                driver = "org.postgresql.Driver";
+            }
+        } else if (url.startsWith("jdbc:postgresql:")) {
+            driver = "org.postgresql.Driver";
+            if (!url.contains("sslmode")) {
+                url += (url.contains("?") ? "&" : "?") + "sslmode=require";
+            }
+        } else if (url.startsWith("jdbc:mysql:")) {
+            driver = "com.mysql.cj.jdbc.Driver";
+        } else if (url.startsWith("jdbc:h2:")) {
+            driver = "org.h2.Driver";
         }
+
+        log.info("Configured DataSource: {} (user: {})", url.replaceAll(":[^/@]+@", ":***@"), user);
+
+        var builder = DataSourceBuilder.create()
+                .url(url)
+                .username(user)
+                .password(pass);
+
+        if (driver != null) {
+            builder.driverClassName(driver);
+        }
+
+        return builder.build();
     }
 }
