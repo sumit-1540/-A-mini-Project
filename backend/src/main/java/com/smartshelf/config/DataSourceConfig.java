@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 
 @Configuration
@@ -31,11 +33,11 @@ public class DataSourceConfig {
     @Bean
     @Primary
     public DataSource dataSource() {
-        // 1. If Render's native DATABASE_URL is present (e.g. postgres://user:pass@host:5432/db)
+        // Case 1: Render native PostgreSQL DATABASE_URL
         if (databaseUrl != null && !databaseUrl.isBlank()) {
             try {
                 if (databaseUrl.startsWith("postgres://") || databaseUrl.startsWith("postgresql://")) {
-                    log.info("Detected Render native DATABASE_URL environment variable.");
+                    log.info("Detected Render native PostgreSQL DATABASE_URL.");
                     URI dbUri = new URI(databaseUrl);
                     String userInfo = dbUri.getUserInfo();
                     String dbUser = username;
@@ -50,7 +52,10 @@ public class DataSourceConfig {
                     if (path != null && path.startsWith("/")) {
                         path = path.substring(1);
                     }
-                    String jdbcUrl = "jdbc:postgresql://" + dbUri.getHost() + ":" + port + "/" + path;
+                    String sslParam = (dbUri.getQuery() != null && dbUri.getQuery().contains("sslmode"))
+                            ? ""
+                            : "?sslmode=require";
+                    String jdbcUrl = "jdbc:postgresql://" + dbUri.getHost() + ":" + port + "/" + path + sslParam;
                     log.info("Connecting to Render PostgreSQL at: {}:{}", dbUri.getHost(), port);
                     return DataSourceBuilder.create()
                             .driverClassName("org.postgresql.Driver")
@@ -60,20 +65,49 @@ public class DataSourceConfig {
                             .build();
                 }
             } catch (Exception e) {
-                log.warn("Failed to parse DATABASE_URL as URI, falling back to standard datasource configuration: {}", e.getMessage());
+                log.warn("Failed to parse DATABASE_URL: {}", e.getMessage());
             }
         }
 
-        // 2. Standard Spring Datasource URL (MySQL, PostgreSQL, or H2)
-        String url = (springDatasourceUrl != null && !springDatasourceUrl.isBlank())
-                ? springDatasourceUrl
-                : "jdbc:mysql://localhost:3306/grocery_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+        // Case 2: Custom SPRING_DATASOURCE_URL explicitly supplied (e.g. Cloud MySQL / Aiven / TiDB)
+        if (springDatasourceUrl != null && !springDatasourceUrl.isBlank()) {
+            log.info("Connecting to configured SPRING_DATASOURCE_URL: {}", springDatasourceUrl);
+            return DataSourceBuilder.create()
+                    .url(springDatasourceUrl)
+                    .username(username)
+                    .password(password)
+                    .build();
+        }
 
-        log.info("Initializing DataSource with URL: {}", url);
+        // Case 3: Local MySQL on localhost:3306 (if port is open)
+        if (isPortOpen("localhost", 3306)) {
+            String defaultMysqlUrl = "jdbc:mysql://localhost:3306/grocery_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+            log.info("Local MySQL 3306 detected. Connecting to: {}", defaultMysqlUrl);
+            return DataSourceBuilder.create()
+                    .driverClassName("com.mysql.cj.jdbc.Driver")
+                    .url(defaultMysqlUrl)
+                    .username(username)
+                    .password(password)
+                    .build();
+        }
+
+        // Case 4: Universal Cloud Self-Healing Fallback — Embedded H2 in MySQL Compatibility Mode
+        log.warn("No external database URL configured and local MySQL 3306 unavailable. Starting embedded H2 (MySQL mode) with auto-seeding.");
+        String h2Url = "jdbc:h2:mem:grocery_db;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE";
         return DataSourceBuilder.create()
-                .url(url)
-                .username(username)
-                .password(password)
+                .driverClassName("org.h2.Driver")
+                .url(h2Url)
+                .username("sa")
+                .password("")
                 .build();
+    }
+
+    private boolean isPortOpen(String host, int port) {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(host, port), 1000);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
