@@ -17,14 +17,12 @@ import {
   Plus,
   Minus,
   RefreshCw,
-  Zap,
   X,
   ChevronDown,
   ChevronUp,
   Image as ImageIcon,
   Edit3,
 } from 'lucide-react';
-import Tesseract from 'tesseract.js';
 import { aiService } from '../services/api';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
@@ -46,7 +44,6 @@ export const HandwrittenListPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [ocrProgress, setOcrProgress] = useState(null); // { status: string, progress: number }
   const [result, setResult] = useState(null);
   const [showRawTextEditor, setShowRawTextEditor] = useState(false);
 
@@ -97,57 +94,8 @@ export const HandwrittenListPage = () => {
   const handleClearImage = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
-    setOcrProgress(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
-  };
-
-  // Run On-Device Tesseract Neural OCR (Free, Client-Side, Instant)
-  const handleRunTesseractOcr = async () => {
-    if (!selectedFile) return;
-    try {
-      setIsProcessing(true);
-      setOcrProgress({ status: 'Starting Neural OCR engine...', progress: 10 });
-
-      const res = await Tesseract.recognize(selectedFile, 'eng', {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            const pct = Math.round((m.progress || 0) * 100);
-            setOcrProgress({
-              status: `Transcribing handwritten text (${pct}%)...`,
-              progress: pct,
-            });
-          } else {
-            setOcrProgress({
-              status: `${m.status}...`,
-              progress: Math.round((m.progress || 0) * 100),
-            });
-          }
-        },
-      });
-
-      const extractedText = (res?.data?.text || '').trim();
-      if (!extractedText) {
-        warning('Could not detect clear text from image. Try another picture or type items directly.');
-        return;
-      }
-
-      setRawText(extractedText);
-      setOcrProgress({ status: 'Matching items with store catalog...', progress: 100 });
-
-      const parsedRes = await aiService.parseHandwrittenListText(extractedText, geminiApiKey, geminiModel);
-      parsedRes.aiModelUsed = 'Tesseract Neural OCR (On-Device) + SmartShelf Matcher';
-      parsedRes.rawExtractedText = extractedText;
-      setResult(parsedRes);
-      const count = parsedRes?.items?.length || parsedRes?.matchedItems?.length || 0;
-      success(`Transcribed and matched ${count} grocery products!`);
-    } catch (err) {
-      console.error('OCR Error:', err);
-      error('Failed to run OCR on image: ' + (err.message || ''));
-    } finally {
-      setIsProcessing(false);
-      setOcrProgress(null);
-    }
   };
 
   // Run Google Gemini Multimodal Vision AI
@@ -164,8 +112,8 @@ export const HandwrittenListPage = () => {
       success(`Gemini Vision AI processed slip: ${count} items matched!`);
     } catch (err) {
       console.error('Gemini Vision error:', err);
-      const msg = err.response?.data?.message || err.message || 'Gemini Vision AI failed';
-      error(`${msg}. You can also use the On-Device OCR button!`);
+      const msg = err.response?.data?.message || err.message || 'Gemini Vision AI failed to process slip';
+      error(msg);
     } finally {
       setIsProcessing(false);
     }
@@ -431,51 +379,19 @@ export const HandwrittenListPage = () => {
                 </button>
               </div>
 
-              {/* OCR Progress Bar */}
-              {ocrProgress && (
-                <div className="max-w-lg mx-auto p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-emerald-300 font-semibold">
-                    <span className="flex items-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
-                      {ocrProgress.status}
-                    </span>
-                    <span className="font-mono">{ocrProgress.progress}%</span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-emerald-500 h-full transition-all duration-300"
-                      style={{ width: `${ocrProgress.progress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              {!ocrProgress && (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto pt-1">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="w-full sm:flex-1 bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 font-bold hover:from-amber-400 hover:to-emerald-400"
-                    isLoading={isProcessing && !geminiApiKey}
-                    leftIcon={<Zap className="w-4 h-4 fill-slate-950" />}
-                    onClick={handleRunTesseractOcr}
-                  >
-                    Run On-Device OCR (Instant)
-                  </Button>
-
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    className="w-full sm:flex-1"
-                    isLoading={isProcessing}
-                    leftIcon={<Sparkles className="w-4 h-4 text-emerald-400" />}
-                    onClick={handleRunGeminiOcr}
-                  >
-                    Gemini Vision AI
-                  </Button>
-                </div>
-              )}
+              {/* Action Button: Pure Gemini Vision AI */}
+              <div className="flex items-center justify-center max-w-md mx-auto pt-2">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/25"
+                  isLoading={isProcessing}
+                  leftIcon={<Sparkles className="w-5 h-5 fill-slate-950" />}
+                  onClick={handleRunGeminiOcr}
+                >
+                  {isProcessing ? 'Analyzing Slip with Gemini Vision...' : 'Scan Slip with Gemini Vision AI'}
+                </Button>
+              </div>
             </div>
           )}
         </div>
