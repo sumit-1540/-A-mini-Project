@@ -136,43 +136,43 @@ public class DataSeederService implements CommandLineRunner {
         LocalDate today = LocalDate.now();
 
         Product p1 = createProductHelper("India Gate Basmati Rice 5kg", "SKU-RICE-001", "890103001", grains, "India Gate", "bag",
-                new BigDecimal("420.00"), new BigDecimal("510.00"), 45, 10, today.plusMonths(12), s1, "Aisle 1", "Shelf A1");
+                new BigDecimal("380.00"), new BigDecimal("460.00"), 45, 10, today.plusMonths(12), s1, "Aisle 1", "Shelf A1");
 
         Product p2 = createProductHelper("Aashirvaad Superior MP Sharbati Atta 10kg", "SKU-ATTA-002", "890103002", grains, "Aashirvaad", "bag",
-                new BigDecimal("380.00"), new BigDecimal("460.00"), 30, 8, today.plusMonths(6), s3, "Aisle 1", "Shelf A2");
+                new BigDecimal("350.00"), new BigDecimal("420.00"), 30, 8, today.plusMonths(6), s3, "Aisle 1", "Shelf A2");
 
         Product p3 = createProductHelper("Tata Salt Vacuum Evaporated 1kg", "SKU-SALT-003", "890103003", spices, "Tata", "pkt",
                 new BigDecimal("22.00"), new BigDecimal("28.00"), 120, 20, today.plusMonths(24), s1, "Aisle 2", "Shelf B1");
 
         Product p4 = createProductHelper("Amul Butter Pasteurized 500g", "SKU-BTR-004", "890103004", dairy, "Amul", "pack",
-                new BigDecimal("230.00"), new BigDecimal("275.00"), 4, 10, today.plusDays(4), s2, "Chiller 1", "Rack 2"); // Low stock & expiring soon
+                new BigDecimal("220.00"), new BigDecimal("265.00"), 4, 10, today.plusDays(4), s2, "Chiller 1", "Rack 2"); // Low stock & expiring soon
 
         Product p5 = createProductHelper("Amul Taaza Homogenised Toned Milk 1L", "SKU-MILK-005", "890103005", dairy, "Amul", "tetra",
-                new BigDecimal("62.00"), new BigDecimal("74.00"), 2, 15, today.plusDays(2), s2, "Chiller 1", "Rack 1"); // Critical stock & expiring
+                new BigDecimal("58.00"), new BigDecimal("70.00"), 2, 15, today.plusDays(2), s2, "Chiller 1", "Rack 1"); // Critical stock & expiring
 
         Product p6 = createProductHelper("Fortune Sunlite Refined Sunflower Oil 1L", "SKU-OIL-006", "890103006", oils, "Fortune", "pouch",
-                new BigDecimal("125.00"), new BigDecimal("155.00"), 50, 12, today.plusMonths(8), s1, "Aisle 3", "Shelf C1");
+                new BigDecimal("112.00"), new BigDecimal("138.00"), 50, 12, today.plusMonths(8), s1, "Aisle 3", "Shelf C1");
 
         Product p7 = createProductHelper("Red Label Strong Tea 500g", "SKU-TEA-007", "890103007", beverages, "Brooke Bond", "box",
-                new BigDecimal("240.00"), new BigDecimal("295.00"), 25, 8, today.plusMonths(18), s3, "Aisle 2", "Shelf B3");
+                new BigDecimal("210.00"), new BigDecimal("260.00"), 25, 8, today.plusMonths(18), s3, "Aisle 2", "Shelf B3");
 
         Product p8 = createProductHelper("Parle-G Gold Biscuits 1kg Family Pack", "SKU-PARLE-008", "890103008", snacks, "Parle", "pack",
-                new BigDecimal("90.00"), new BigDecimal("120.00"), 60, 15, today.plusMonths(5), s1, "Aisle 4", "Shelf D1");
+                new BigDecimal("82.00"), new BigDecimal("105.00"), 60, 15, today.plusMonths(5), s1, "Aisle 4", "Shelf D1");
 
         Product p9 = createProductHelper("Everest Garam Masala 100g", "SKU-MAS-009", "890103009", spices, "Everest", "box",
-                new BigDecimal("68.00"), new BigDecimal("88.00"), 40, 10, today.plusMonths(10), s1, "Aisle 2", "Shelf B2");
+                new BigDecimal("60.00"), new BigDecimal("78.00"), 40, 10, today.plusMonths(10), s1, "Aisle 2", "Shelf B2");
 
         Product p10 = createProductHelper("Surf Excel Easy Wash Detergent Powder 1kg", "SKU-SURF-010", "890103010", cleaning, "Surf Excel", "bag",
-                new BigDecimal("115.00"), new BigDecimal("145.00"), 35, 10, today.plusMonths(36), s3, "Aisle 5", "Shelf E1");
+                new BigDecimal("105.00"), new BigDecimal("132.00"), 35, 10, today.plusMonths(36), s3, "Aisle 5", "Shelf E1");
 
         Product p11 = createProductHelper("Dettol Original Bathing Soap 125g (Buy 3 Get 1)", "SKU-DET-011", "890103011", personalCare, "Dettol", "bundle",
-                new BigDecimal("170.00"), new BigDecimal("210.00"), 18, 5, today.plusMonths(24), s3, "Aisle 5", "Shelf E2");
+                new BigDecimal("145.00"), new BigDecimal("180.00"), 18, 5, today.plusMonths(24), s3, "Aisle 5", "Shelf E2");
 
         Product p12 = createProductHelper("Maggi 2-Minute Masala Noodles (Pack of 12)", "SKU-MAG-012", "890103012", snacks, "Nestle", "pack",
-                new BigDecimal("150.00"), new BigDecimal("180.00"), 3, 15, today.plusMonths(4), s1, "Aisle 4", "Shelf D2"); // Low stock
+                new BigDecimal("138.00"), new BigDecimal("168.00"), 3, 15, today.plusMonths(4), s1, "Aisle 4", "Shelf D2"); // Low stock
 
         Product p13 = createProductHelper("Madhur Pure & Hygienic Sugar 1kg", "SKU-SUG-025", "890103025", grains, "Madhur", "pkt",
-                new BigDecimal("44.00"), new BigDecimal("52.00"), 80, 20, today.plusMonths(24), s1, "Aisle 1", "Shelf A5");
+                new BigDecimal("38.00"), new BigDecimal("45.00"), 80, 20, today.plusMonths(24), s1, "Aisle 1", "Shelf A5");
 
         // 5. Customers
         Customer c1 = customerRepository.save(Customer.builder()

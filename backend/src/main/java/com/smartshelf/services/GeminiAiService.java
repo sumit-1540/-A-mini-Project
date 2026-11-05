@@ -214,7 +214,11 @@ public class GeminiAiService {
                 "STRICT INSTRUCTIONS:\n" +
                 "1. If an image is attached, perform optical character recognition (OCR) on all handwritten or printed text.\n" +
                 "2. If raw text is provided, parse every line item.\n" +
-                "3. Extract the requested quantity (default 1) and unit (e.g. kg, g, L, ml, pkt, pcs, bag, box).\n" +
+                "3. Extract the requested quantity (default 1) and unit.\n" +
+                "   CRITICAL STORE PACKAGING RULE: Products in the catalog are sold as prepackaged units (e.g., 'Red Label Strong Tea 500g' is 1 box of 500g; 'India Gate Basmati Rice 5kg' is 1 bag of 5kg; 'Aashirvaad Atta 10kg' is 1 bag of 10kg). " +
+                "   When a customer writes 'Tea 500g' or 'Basmati Rice 5kg', set extractedQuantity to the number of PACKS/BAGS to bill at POS (typically 1). " +
+                "   NEVER set extractedQuantity to 500 or 5 for packaging weights, because billing 500 units of tea would multiply the price by 500! " +
+                "   Only set quantity > 1 if the customer explicitly requested multiple packs (e.g. '2 x', '2 packs', '3 bags').\n" +
                 "4. Match each item to the closest product from the STORE INVENTORY CATALOG. If no good match, leave matchedProductId null.\n" +
                 "5. Return ONLY a valid JSON object matching this schema:\n" +
                 "{\n" +
@@ -224,7 +228,7 @@ public class GeminiAiService {
                 "      \"rawText\": \"original item text line\",\n" +
                 "      \"extractedProductName\": \"recognized item name\",\n" +
                 "      \"extractedQuantity\": 1,\n" +
-                "      \"extractedUnit\": \"kg\",\n" +
+                "      \"extractedUnit\": \"box\",\n" +
                 "      \"matchedProductId\": 12,\n" +
                 "      \"matchConfidence\": 0.95\n" +
                 "    }\n" +
@@ -378,12 +382,16 @@ public class GeminiAiService {
             JsonNode itemsNode = geminiResult.isArray() ? geminiResult : geminiResult.path("items");
             if (itemsNode.isArray()) {
                 for (JsonNode itemNode : itemsNode) {
-                    String rawText = itemNode.path("rawText").asText();
-                    String extractedName = itemNode.path("extractedProductName").asText();
+                    String rawText = itemNode.hasNonNull("rawText") ? itemNode.path("rawText").asText()
+                            : (itemNode.hasNonNull("originalText") ? itemNode.path("originalText").asText() : "");
+                    String extractedName = itemNode.hasNonNull("extractedProductName") ? itemNode.path("extractedProductName").asText()
+                            : (itemNode.hasNonNull("matchedName") ? itemNode.path("matchedName").asText() : "");
                     int qty = itemNode.path("extractedQuantity").asInt(1);
                     if (qty <= 0) qty = 1;
-                    String unit = itemNode.path("extractedUnit").asText("pcs");
-                    Long matchedId = itemNode.hasNonNull("matchedProductId") ? itemNode.path("matchedProductId").asLong() : null;
+                    String unit = itemNode.hasNonNull("extractedUnit") ? itemNode.path("extractedUnit").asText()
+                            : (itemNode.hasNonNull("unit") ? itemNode.path("unit").asText("pcs") : "pcs");
+                    Long matchedId = itemNode.hasNonNull("matchedProductId") ? itemNode.path("matchedProductId").asLong()
+                            : (itemNode.hasNonNull("matchedId") ? itemNode.path("matchedId").asLong() : null);
                     double confidence = itemNode.path("matchConfidence").asDouble(0.95);
 
                     Product matchedProduct = matchedId != null ? productMap.get(matchedId) : null;
@@ -391,11 +399,14 @@ public class GeminiAiService {
                         matchedProduct = findBestCatalogProduct(extractedName != null && !extractedName.isBlank() ? extractedName : rawText, catalog);
                     }
 
+                    int billedQty = calculateBilledQuantity(qty, unit, rawText, extractedName, matchedProduct);
+                    String finalUnit = (matchedProduct != null && matchedProduct.getUnit() != null) ? matchedProduct.getUnit() : unit;
+
                     ParsedListItemDTO itemDTO = ParsedListItemDTO.builder()
                             .rawText(rawText)
                             .extractedProductName(extractedName != null && !extractedName.isBlank() ? extractedName : (matchedProduct != null ? matchedProduct.getName() : rawText))
-                            .extractedQuantity(qty)
-                            .extractedUnit(unit)
+                            .extractedQuantity(billedQty)
+                            .extractedUnit(finalUnit)
                             .found(matchedProduct != null)
                             .matchConfidence(matchedProduct != null ? confidence : 0.0)
                             .build();
@@ -408,7 +419,7 @@ public class GeminiAiService {
                         itemDTO.setMatchedPrice(matchedProduct.getSellingPrice());
                         itemDTO.setAvailableStock(matchedProduct.getCurrentStock());
 
-                        BigDecimal lineTotal = matchedProduct.getSellingPrice().multiply(BigDecimal.valueOf(qty));
+                        BigDecimal lineTotal = matchedProduct.getSellingPrice().multiply(BigDecimal.valueOf(billedQty));
                         itemDTO.setEstimatedLineTotal(lineTotal);
                         estimatedTotal = estimatedTotal.add(lineTotal);
                     }
@@ -488,25 +499,19 @@ public class GeminiAiService {
             }
 
             Product bestMatch = findBestCatalogProduct(productNameQuery, catalog);
+            int billedQty = calculateBilledQuantity(qty, unit, rawLine, productNameQuery, bestMatch);
+            String finalUnit = (bestMatch != null && bestMatch.getUnit() != null) ? bestMatch.getUnit() : unit;
 
             ParsedListItemDTO itemDTO = ParsedListItemDTO.builder()
                     .rawText(rawLine)
                     .extractedProductName(productNameQuery)
-                    .extractedQuantity(qty)
-                    .extractedUnit(unit)
+                    .extractedQuantity(billedQty)
+                    .extractedUnit(finalUnit)
                     .found(bestMatch != null)
                     .matchConfidence(bestMatch != null ? 0.95 : 0.0)
                     .build();
 
             if (bestMatch != null) {
-                // If product title has pre-packaged weight matching extracted qty (e.g. "Basmati Rice 5kg" matched "India Gate Basmati Rice 5kg")
-                String bmName = bestMatch.getName().toLowerCase();
-                if ((bmName.contains(qty + "kg") || bmName.contains(qty + " kg") || bmName.contains(qty + "l") || bmName.contains(qty + " l"))
-                        && !cleanedLine.toLowerCase().contains("bag") && !cleanedLine.toLowerCase().contains("pkt") && !cleanedLine.toLowerCase().contains("packet")) {
-                    qty = 1;
-                    itemDTO.setExtractedQuantity(1);
-                }
-
                 matchedCount++;
                 itemDTO.setMatchedProductId(bestMatch.getId());
                 itemDTO.setMatchedProductName(bestMatch.getName());
@@ -514,7 +519,7 @@ public class GeminiAiService {
                 itemDTO.setMatchedPrice(bestMatch.getSellingPrice());
                 itemDTO.setAvailableStock(bestMatch.getCurrentStock());
 
-                BigDecimal lineTotal = bestMatch.getSellingPrice().multiply(BigDecimal.valueOf(qty));
+                BigDecimal lineTotal = bestMatch.getSellingPrice().multiply(BigDecimal.valueOf(billedQty));
                 itemDTO.setEstimatedLineTotal(lineTotal);
                 estimatedTotal = estimatedTotal.add(lineTotal);
             } else {
@@ -574,6 +579,70 @@ public class GeminiAiService {
             }
         }
         return result;
+    }
+
+    private int calculateBilledQuantity(int rawQty, String rawUnit, String lineText, String extractedName, Product product) {
+        if (product == null) {
+            return Math.max(1, rawQty);
+        }
+
+        String prodName = product.getName() != null ? product.getName().toLowerCase() : "";
+        String text = (lineText != null ? lineText : "").toLowerCase();
+        String u = (rawUnit != null ? rawUnit : "").toLowerCase().trim();
+        int safeQty = rawQty > 0 ? rawQty : 1;
+
+        // Check if customer explicitly requested a multiplier like "2 x", "2x", "2 packs", "3 bags"
+        java.util.regex.Pattern multPattern = java.util.regex.Pattern.compile("(?:^|\\s)(\\d+)\\s*(?:x|packs?|pkts?|bags?|boxes?|bottles?|tins?|trays?)(?:\\s|$)", java.util.regex.Pattern.CASE_INSENSITIVE);
+        java.util.regex.Matcher multMatcher = multPattern.matcher(text);
+        if (multMatcher.find()) {
+            try {
+                int explicitCount = Integer.parseInt(multMatcher.group(1));
+                if (explicitCount > 0 && explicitCount <= 50) {
+                    return explicitCount;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Case 1: Grams or Milliliters extraction (e.g. 500g, 200g, 750ml, 150g, 100g, 135g, 600g)
+        // If safeQty >= 50 and unit is g/gm/ml, it was extracting the item gram weight, NOT packet count!
+        if (safeQty >= 50 && (u.contains("g") || u.contains("gm") || u.contains("ml"))) {
+            if (prodName.contains(safeQty + "g") || prodName.contains(safeQty + " g") ||
+                prodName.contains(safeQty + "gm") || prodName.contains(safeQty + " gm") ||
+                prodName.contains(safeQty + "ml") || prodName.contains(safeQty + " ml")) {
+                return 1;
+            }
+            java.util.regex.Matcher weightMatcher = java.util.regex.Pattern.compile("(\\d+)\\s*(?:g|gm|ml)").matcher(prodName);
+            if (weightMatcher.find()) {
+                int prodWeight = Integer.parseInt(weightMatcher.group(1));
+                if (prodWeight > 0) {
+                    return Math.max(1, (int) Math.round((double) safeQty / prodWeight));
+                }
+            }
+            return 1;
+        }
+
+        // Case 2: Kilograms or Liters matching product pack size (e.g. 5kg Basmati Rice, 10kg Atta, 1L Oil, 2L Milk)
+        if (safeQty > 1 && (u.contains("kg") || u.contains("kilo") || u.contains("l") || u.contains("ltr") || u.isEmpty())) {
+            if (prodName.contains(safeQty + "kg") || prodName.contains(safeQty + " kg") ||
+                prodName.contains(safeQty + "l") || prodName.contains(safeQty + " l")) {
+                return 1;
+            }
+        }
+
+        // Case 3: Pack sizes like "Pack of 12" (e.g. Farm Fresh Brown Eggs, Maggi Noodles)
+        if (safeQty == 12 && prodName.contains("pack of 12")) {
+            return 1;
+        }
+        if (safeQty == 6 && prodName.contains("pack of 6")) {
+            return 1;
+        }
+
+        // Case 4: Any unreasonable quantity > 25 for a grocery item on a slip
+        if (safeQty > 25) {
+            return 1;
+        }
+
+        return safeQty;
     }
 
     private static class ExtractedQuantityUnit {
