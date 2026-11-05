@@ -55,7 +55,7 @@ export const HandwrittenListPage = () => {
   const [geminiApiKey, setGeminiApiKey] = useState(
     () => localStorage.getItem('smartshelf_gemini_key') || DEFAULT_GEMINI_KEY
   );
-  const [geminiModel, setGeminiModel] = useState('gemini-3.1-pro-preview');
+  const [geminiModel, setGeminiModel] = useState('gemini-3-flash-preview');
   const [showConfig, setShowConfig] = useState(false);
 
   useEffect(() => {
@@ -317,9 +317,9 @@ export const HandwrittenListPage = () => {
               onChange={(e) => setGeminiModel(e.target.value)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
             >
-              <option value="gemini-3.1-pro-preview">Gemini Pro (High Accuracy OCR)</option>
-              <option value="gemini-3.5-flash">Gemini 3.5 Flash (Ultra Fast Vision)</option>
-              <option value="gemini-pro-latest">Gemini Pro Latest</option>
+              <option value="gemini-3-flash-preview">Gemini 3 Flash Vision (Recommended)</option>
+              <option value="gemini-3.5-flash">Gemini 3.5 Flash Vision</option>
+              <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Vision Preview)</option>
             </select>
           </div>
         </div>

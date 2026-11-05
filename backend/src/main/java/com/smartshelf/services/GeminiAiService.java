@@ -292,19 +292,40 @@ public class GeminiAiService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<String> response;
-        try {
-            response = restTemplate.postForEntity(endpoint, entity, String.class);
-        } catch (Exception ex) {
-            if (!cleanModel.equals("gemini-3.5-flash")) {
-                log.warn("Gemini model {} call failed ({}), falling back to gemini-3.5-flash...", cleanModel, ex.getMessage());
-                cleanModel = "gemini-3.5-flash";
-                endpoint = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", cleanModel, apiKey);
-                response = restTemplate.postForEntity(endpoint, entity, String.class);
-            } else {
-                throw ex;
+
+        List<String> candidateModels = new ArrayList<>();
+        if (cleanModel != null && !cleanModel.trim().isEmpty()) {
+            candidateModels.add(cleanModel);
+        }
+        if (!candidateModels.contains("gemini-3-flash-preview")) {
+            candidateModels.add("gemini-3-flash-preview");
+        }
+        if (!candidateModels.contains("gemini-3.5-flash")) {
+            candidateModels.add("gemini-3.5-flash");
+        }
+
+        ResponseEntity<String> response = null;
+        Exception lastEx = null;
+        String activeModel = cleanModel;
+
+        for (String m : candidateModels) {
+            try {
+                String ep = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", m, apiKey);
+                response = restTemplate.postForEntity(ep, entity, String.class);
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    activeModel = m;
+                    break;
+                }
+            } catch (Exception ex) {
+                lastEx = ex;
+                log.warn("Gemini model {} call failed ({}). Trying next candidate...", m, ex.getMessage());
             }
         }
+
+        if (response == null || !response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw (lastEx != null ? lastEx : new RuntimeException("Gemini API request failed across all candidate models"));
+        }
+        cleanModel = activeModel;
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             JsonNode rootNode = objectMapper.readTree(response.getBody());
