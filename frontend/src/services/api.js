@@ -149,6 +149,14 @@ export const inventoryService = {
     const res = await api.post('/inventory/adjust', adjustment);
     return res.data;
   },
+  discardExpired: async (productId) => {
+    const res = await api.post(`/inventory/discard-expired/${productId}`);
+    return res.data;
+  },
+  discardAllExpired: async () => {
+    const res = await api.post('/inventory/discard-all-expired');
+    return res.data;
+  },
   getStockTransactions: async (productId) => {
     const res = await api.get('/inventory/transactions', { params: { productId } });
     return res.data;

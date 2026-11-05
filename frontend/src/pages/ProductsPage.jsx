@@ -183,7 +183,7 @@ export const ProductsPage = () => {
                   <th className="px-4 py-4 font-semibold text-center">Stock Level</th>
                   <th className="px-4 py-4 font-semibold text-center">Status</th>
                   <th className="px-4 py-4 font-semibold">Location</th>
-                  {isAdmin && <th className="px-5 py-4 font-semibold text-right">Actions</th>}
+                  <th className="px-5 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -236,39 +236,45 @@ export const ProductsPage = () => {
                       )}
                     </td>
 
-                    {isAdmin && (
-                      <td className="px-5 py-3.5 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => {
-                              setBarcodeProduct(product);
-                              setIsBarcodeModalOpen(true);
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-colors"
-                            title="Print Shelf Barcode Sticker"
-                          >
-                            <Barcode className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedProduct(product);
-                              setIsFormModalOpen(true);
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product.id, product.name)}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
-                            title="Deactivate"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    )}
+                    <td className="px-5 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setBarcodeProduct(product);
+                                setIsBarcodeModalOpen(true);
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-colors"
+                              title="Print Shelf Barcode Sticker"
+                            >
+                              <Barcode className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setIsFormModalOpen(true);
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => handleDelete(product.id, product.name)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            product.stockStatus === 'EXPIRED'
+                              ? 'text-rose-400 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30'
+                              : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800'
+                          }`}
+                          title={product.stockStatus === 'EXPIRED' ? 'Remove Expired Product from Store' : 'Deactivate Product'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
 

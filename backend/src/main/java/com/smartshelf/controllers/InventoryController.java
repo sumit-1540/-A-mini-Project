@@ -44,10 +44,24 @@ public class InventoryController {
     }
 
     @PostMapping("/adjust")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     public ResponseEntity<InventoryResponse> adjustStock(@Valid @RequestBody StockAdjustmentRequest request, Authentication authentication) {
         String username = authentication != null ? authentication.getName() : "ADMIN";
         return ResponseEntity.ok(inventoryService.adjustStock(request, username));
+    }
+
+    @PostMapping("/discard-expired/{productId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
+    public ResponseEntity<InventoryResponse> discardExpiredStock(@PathVariable Long productId, Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : "ADMIN";
+        return ResponseEntity.ok(inventoryService.discardExpiredStock(productId, username));
+    }
+
+    @PostMapping("/discard-all-expired")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
+    public ResponseEntity<List<InventoryResponse>> discardAllExpiredStock(Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : "ADMIN";
+        return ResponseEntity.ok(inventoryService.discardAllExpiredStock(username));
     }
 
     @GetMapping("/transactions")

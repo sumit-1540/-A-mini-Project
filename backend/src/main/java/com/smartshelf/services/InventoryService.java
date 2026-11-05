@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,7 @@ public class InventoryService {
     @Transactional(readOnly = true)
     public List<InventoryResponse> getAllInventory() {
         return inventoryRepository.findAllByOrderByCurrentStockAsc().stream()
+                .filter(inv -> inv.getProduct() != null && inv.getProduct().isActive())
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -42,6 +44,7 @@ public class InventoryService {
     @Transactional(readOnly = true)
     public List<InventoryResponse> getLowStockInventory() {
         return productRepository.findLowStockProducts().stream()
+                .filter(Product::isActive)
                 .map(p -> inventoryRepository.findByProductId(p.getId()).orElse(null))
                 .filter(inv -> inv != null)
                 .map(this::mapToResponse)
@@ -52,6 +55,7 @@ public class InventoryService {
     public List<InventoryResponse> getExpiringInventory(int days) {
         LocalDate threshold = LocalDate.now().plusDays(days);
         return productRepository.findExpiringProducts(threshold).stream()
+                .filter(Product::isActive)
                 .map(p -> inventoryRepository.findByProductId(p.getId()).orElse(null))
                 .filter(inv -> inv != null)
                 .map(this::mapToResponse)
@@ -104,6 +108,54 @@ public class InventoryService {
         stockAlertService.checkAndTriggerExpiryAlert(savedProduct);
 
         return mapToResponse(inventory);
+    }
+
+    @Transactional
+    public InventoryResponse discardExpiredStock(Long productId, String performedBy) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+        int oldStock = product.getCurrentStock() != null ? product.getCurrentStock() : 0;
+
+        product.setCurrentStock(0);
+        Product savedProduct = productRepository.save(product);
+
+        Inventory inventory = inventoryRepository.findByProductId(savedProduct.getId())
+                .orElseGet(() -> Inventory.builder().product(savedProduct).build());
+
+        inventory.setCurrentStock(0);
+        inventory.setStatus(calculateStatus(0, savedProduct.getMinimumStock(), savedProduct.getExpiryDate()));
+        inventory = inventoryRepository.save(inventory);
+
+        if (oldStock > 0) {
+            InventoryTransaction tx = InventoryTransaction.builder()
+                    .product(savedProduct)
+                    .type(TransactionType.ADJUSTMENT_EXPIRED)
+                    .quantityChange(-oldStock)
+                    .previousStock(oldStock)
+                    .newStock(0)
+                    .reason("Expired product stock discarded / written off from shelves")
+                    .performedBy(performedBy != null ? performedBy : "ADMIN")
+                    .build();
+            inventoryTransactionRepository.save(tx);
+        }
+
+        stockAlertService.checkAndTriggerStockAlert(savedProduct);
+        stockAlertService.checkAndTriggerExpiryAlert(savedProduct);
+
+        return mapToResponse(inventory);
+    }
+
+    @Transactional
+    public List<InventoryResponse> discardAllExpiredStock(String performedBy) {
+        List<Product> expiringProducts = productRepository.findExpiringProducts(LocalDate.now());
+        List<InventoryResponse> results = new ArrayList<>();
+        for (Product product : expiringProducts) {
+            if (product.isActive() && product.getCurrentStock() != null && product.getCurrentStock() > 0) {
+                results.add(discardExpiredStock(product.getId(), performedBy));
+            }
+        }
+        return results;
     }
 
     public List<InventoryTransactionResponse> getStockHistory(Long productId) {

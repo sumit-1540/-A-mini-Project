@@ -8,19 +8,23 @@ import {
   Clock,
   Search,
   Truck,
+  Trash2,
+  AlertOctagon,
 } from 'lucide-react';
-import { inventoryService } from '../services/api';
+import { inventoryService, productService } from '../services/api';
 import { Button } from '../components/common/Button';
 import { Badge, StockStatusBadge } from '../components/common/Badge';
 import { StockAdjustModal } from '../components/inventory/StockAdjustModal';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export const InventoryPage = () => {
   const [searchParams] = useSearchParams();
   const searchFilter = searchParams.get('search') || '';
 
   const { isAdmin } = useAuth();
+  const { success, error } = useToast();
   const [activeTab, setActiveTab] = useState('inventory');
   const [filterMode, setFilterMode] = useState('ALL');
 
@@ -60,6 +64,45 @@ export const InventoryPage = () => {
       setIsLoading(false);
     }
   };
+
+  const handleDiscardExpired = async (item) => {
+    if (!window.confirm(`Discard and write off expired stock for "${item.productName}" (${item.currentStock} ${item.unit})?`)) return;
+    try {
+      await inventoryService.discardExpired(item.productId);
+      success(`Expired stock for "${item.productName}" discarded from shelf.`);
+      loadData();
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to discard expired stock');
+    }
+  };
+
+  const handleDeactivateProduct = async (item) => {
+    if (!window.confirm(`Remove / deactivate "${item.productName}" completely from the project?`)) return;
+    try {
+      await productService.deleteProduct(item.productId);
+      success(`Product "${item.productName}" removed from project.`);
+      loadData();
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to remove product');
+    }
+  };
+
+  const handleDiscardAllExpired = async () => {
+    const expiredCount = inventory.filter(i => i.status === 'EXPIRED' || (i.daysUntilExpiry !== undefined && i.daysUntilExpiry < 0 && i.currentStock > 0)).length;
+    if (expiredCount === 0) return;
+    if (!window.confirm(`Discard and write off all ${expiredCount} expired products from shelves?`)) return;
+    try {
+      await inventoryService.discardAllExpired();
+      success(`Successfully discarded all ${expiredCount} expired products!`);
+      loadData();
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to discard all expired products');
+    }
+  };
+
+  const expiredItems = inventory.filter(
+    (item) => item.status === 'EXPIRED' || (item.daysUntilExpiry !== undefined && item.daysUntilExpiry < 0)
+  );
 
   const filteredInventory = inventory.filter((item) => {
     if (!searchQuery.trim()) return true;
@@ -177,6 +220,35 @@ export const InventoryPage = () => {
             </div>
           </div>
 
+          {/* Expired Stock Warning & Action Banner */}
+          {expiredItems.length > 0 && (
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-rose-950/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400">
+                  <AlertOctagon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white">
+                    {expiredItems.length} Expired Product{expiredItems.length > 1 ? 's' : ''} on Shelf
+                  </h4>
+                  <p className="text-xs text-rose-300">
+                    Expired goods cannot be sold at POS. Write off expired stock or remove them from inventory.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="danger"
+                  leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                  onClick={handleDiscardAllExpired}
+                >
+                  Discard All Expired Stock
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Table */}
           <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
             {isLoading ? (
@@ -193,7 +265,7 @@ export const InventoryPage = () => {
                       <th className="px-4 py-4 font-semibold text-center">Status</th>
                       <th className="px-4 py-4 font-semibold">Expiry Date</th>
                       <th className="px-4 py-4 font-semibold">Supplier</th>
-                      {isAdmin && <th className="px-5 py-4 font-semibold text-right">Adjustment</th>}
+                      <th className="px-5 py-4 font-semibold text-right">Actions / Stock</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
@@ -258,21 +330,45 @@ export const InventoryPage = () => {
                           {item.supplierName || 'Wholesale Direct'}
                         </td>
 
-                        {isAdmin && (
-                          <td className="px-5 py-3.5 text-right">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              leftIcon={<SlidersHorizontal className="w-3.5 h-3.5" />}
-                              onClick={() => {
-                                setSelectedItem(item);
-                                setIsAdjustModalOpen(true);
-                              }}
-                            >
-                              Adjust Stock
-                            </Button>
-                          </td>
-                        )}
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {(item.status === 'EXPIRED' || (item.daysUntilExpiry !== undefined && item.daysUntilExpiry < 0)) ? (
+                              <>
+                                {item.currentStock > 0 && (
+                                  <Button
+                                    size="sm"
+                                    variant="danger"
+                                    leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                                    onClick={() => handleDiscardExpired(item)}
+                                    title="Write off and discard expired stock from shelves"
+                                  >
+                                    Discard Stock
+                                  </Button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeactivateProduct(item)}
+                                  className="px-2.5 py-1 text-xs font-semibold text-rose-400 hover:text-white hover:bg-rose-900/60 rounded-xl transition-colors border border-rose-800/50"
+                                  title="Remove / deactivate product completely"
+                                >
+                                  Remove
+                                </button>
+                              </>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                leftIcon={<SlidersHorizontal className="w-3.5 h-3.5" />}
+                                onClick={() => {
+                                  setSelectedItem(item);
+                                  setIsAdjustModalOpen(true);
+                                }}
+                              >
+                                Adjust Stock
+                              </Button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
 

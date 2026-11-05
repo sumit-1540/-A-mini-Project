@@ -94,6 +94,10 @@ public class OrderBillingService {
             customer = customerRepository.findById(request.getCustomerId()).orElse(null);
         }
 
+        if (request.getPaymentMethod() == PaymentMethod.CREDIT_UDHAR && customer == null) {
+            throw new BadRequestException("A registered customer must be selected to proceed with Credit / Udhar checkout.");
+        }
+
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new BadRequestException("Order cart cannot be empty");
         }
@@ -119,6 +123,14 @@ public class OrderBillingService {
         for (OrderItemRequest itemReq : request.getItems()) {
             Product product = productRepository.findById(itemReq.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + itemReq.getProductId()));
+
+            if (!product.isActive()) {
+                throw new BadRequestException("Product '" + product.getName() + "' is inactive / removed from catalog and cannot be sold.");
+            }
+
+            if (product.getExpiryDate() != null && product.getExpiryDate().isBefore(LocalDate.now())) {
+                throw new BadRequestException("Product '" + product.getName() + "' expired on " + product.getExpiryDate() + " and cannot be sold. Please remove expired stock from the shelf.");
+            }
 
             int currentStock = product.getCurrentStock() != null ? product.getCurrentStock() : 0;
             if (currentStock < itemReq.getQuantity()) {
@@ -253,7 +265,8 @@ public class OrderBillingService {
             // If Udhar used
             if (request.getPaymentMethod() == PaymentMethod.CREDIT_UDHAR || balanceDue.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal addedCredit = balanceDue.compareTo(BigDecimal.ZERO) > 0 ? balanceDue : totalAmount;
-                BigDecimal newCreditBal = customer.getCreditBalance().add(addedCredit);
+                BigDecimal currentBal = customer.getCreditBalance() != null ? customer.getCreditBalance() : BigDecimal.ZERO;
+                BigDecimal newCreditBal = currentBal.add(addedCredit);
                 customer.setCreditBalance(newCreditBal);
 
                 CreditTransaction creditTx = CreditTransaction.builder()

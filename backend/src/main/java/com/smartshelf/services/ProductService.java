@@ -229,8 +229,33 @@ public class ProductService {
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        int oldStock = product.getCurrentStock() != null ? product.getCurrentStock() : 0;
+        product.setCurrentStock(0);
         product.setActive(false);
         productRepository.save(product);
+
+        // Also zero out inventory record
+        Optional<Inventory> optInv = inventoryRepository.findByProductId(product.getId());
+        if (optInv.isPresent()) {
+            Inventory inv = optInv.get();
+            inv.setCurrentStock(0);
+            inventoryRepository.save(inv);
+        }
+
+        if (oldStock > 0) {
+            boolean isExpired = product.getExpiryDate() != null && product.getExpiryDate().isBefore(LocalDate.now());
+            InventoryTransaction tx = InventoryTransaction.builder()
+                    .product(product)
+                    .type(isExpired ? TransactionType.ADJUSTMENT_EXPIRED : TransactionType.ADJUSTMENT_MANUAL)
+                    .quantityChange(-oldStock)
+                    .previousStock(oldStock)
+                    .newStock(0)
+                    .reason(isExpired ? "Expired product removed from store catalog" : "Product deactivated / removed from store")
+                    .performedBy("SYSTEM")
+                    .build();
+            inventoryTransactionRepository.save(tx);
+        }
     }
 
     @Transactional

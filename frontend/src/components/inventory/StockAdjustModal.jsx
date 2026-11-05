@@ -61,11 +61,28 @@ export const StockAdjustModal = ({
           >
             <option value="ADJUSTMENT_MANUAL">Manual Stock Count Correction (+ / -)</option>
             <option value="RESTOCK">Direct In-Store Restock (+)</option>
-            <option value="DAMAGE_WRITE_OFF">Damaged / Broken Goods Write-off (-)</option>
-            <option value="EXPIRED_WRITE_OFF">Expired Product Discard (-)</option>
+            <option value="ADJUSTMENT_EXPIRED">Expired Product Discard / Write-Off (-)</option>
+            <option value="ADJUSTMENT_DAMAGE">Damaged / Broken Goods Write-Off (-)</option>
+            <option value="ADJUSTMENT_LOST">Lost / Misplaced Goods (-)</option>
             <option value="RETURN">Customer Return Back to Shelf (+)</option>
           </select>
         </div>
+
+        {currentStock > 0 && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setQuantityChange(-currentStock);
+                setType(item.status === 'EXPIRED' ? 'ADJUSTMENT_EXPIRED' : 'ADJUSTMENT_DAMAGE');
+                setReason(item.status === 'EXPIRED' ? 'Expired product stock discarded from shelf' : 'Stock written off');
+              }}
+              className="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold hover:bg-rose-500/30 transition-colors"
+            >
+              Zero Out / Write Off All ({currentStock} {item.unit})
+            </button>
+          </div>
+        )}
 
         <div>
           <label className="block text-xs font-semibold text-slate-300 mb-1.5">

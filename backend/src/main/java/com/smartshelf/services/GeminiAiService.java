@@ -454,6 +454,14 @@ public class GeminiAiService {
                     .build();
 
             if (bestMatch != null) {
+                // If product title has pre-packaged weight matching extracted qty (e.g. "Basmati Rice 5kg" matched "India Gate Basmati Rice 5kg")
+                String bmName = bestMatch.getName().toLowerCase();
+                if ((bmName.contains(qty + "kg") || bmName.contains(qty + " kg") || bmName.contains(qty + "l") || bmName.contains(qty + " l"))
+                        && !cleanedLine.toLowerCase().contains("bag") && !cleanedLine.toLowerCase().contains("pkt") && !cleanedLine.toLowerCase().contains("packet")) {
+                    qty = 1;
+                    itemDTO.setExtractedQuantity(1);
+                }
+
                 matchedCount++;
                 itemDTO.setMatchedProductId(bestMatch.getId());
                 itemDTO.setMatchedProductName(bestMatch.getName());
@@ -540,10 +548,19 @@ public class GeminiAiService {
         if (mSuffix.find()) {
             String name = mSuffix.group(1).trim();
             if (!name.isEmpty()) {
-                res.productName = name;
-                res.quantity = parseQuantityValue(mSuffix.group(2));
-                if (mSuffix.group(3) != null) {
-                    res.unit = normalizeUnit(mSuffix.group(3));
+                int parsedQty = parseQuantityValue(mSuffix.group(2));
+                String rawUnit = mSuffix.group(3);
+                String normalizedUnit = rawUnit != null ? normalizeUnit(rawUnit) : "pcs";
+
+                // If suffix is large grams/ml (e.g. 100g, 250g, 500g, 200ml, 500ml), treat as package net weight
+                if (("g".equalsIgnoreCase(normalizedUnit) || "ml".equalsIgnoreCase(normalizedUnit)) && parsedQty >= 25) {
+                    res.productName = clean; // Keep full name for exact SKU match
+                    res.quantity = 1;
+                    res.unit = "pcs";
+                } else {
+                    res.productName = name;
+                    res.quantity = parsedQty;
+                    res.unit = normalizedUnit;
                 }
                 return res;
             }
@@ -553,11 +570,19 @@ public class GeminiAiService {
         Pattern prefixPattern = Pattern.compile("^(\\d+(?:\\.\\d+)?(?:/\\d+)?)\\s*(kg|kgs|kilo|kilos|g|gm|gms|gram|grams|l|ltr|ltrs|litre|litres|ml|pkt|pkts|packet|packets|pack|packs|pcs|pieces|pc|tin|tins|can|cans|jar|jars|bottle|bottles|dozen|darjan)?\\s+(?:of\\s+)?(.*?)$", Pattern.CASE_INSENSITIVE);
         Matcher mPrefix = prefixPattern.matcher(clean);
         if (mPrefix.find()) {
-            res.quantity = parseQuantityValue(mPrefix.group(1));
-            if (mPrefix.group(2) != null) {
-                res.unit = normalizeUnit(mPrefix.group(2));
+            int parsedQty = parseQuantityValue(mPrefix.group(1));
+            String rawUnit = mPrefix.group(2);
+            String normalizedUnit = rawUnit != null ? normalizeUnit(rawUnit) : "pcs";
+
+            if (("g".equalsIgnoreCase(normalizedUnit) || "ml".equalsIgnoreCase(normalizedUnit)) && parsedQty >= 25) {
+                res.productName = clean;
+                res.quantity = 1;
+                res.unit = "pcs";
+            } else {
+                res.quantity = parsedQty;
+                res.unit = normalizedUnit;
+                res.productName = mPrefix.group(3).trim();
             }
-            res.productName = mPrefix.group(3).trim();
             return res;
         }
 
