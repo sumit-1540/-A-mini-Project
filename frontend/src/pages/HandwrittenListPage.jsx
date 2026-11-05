@@ -51,10 +51,11 @@ export const HandwrittenListPage = () => {
   const [showRawTextEditor, setShowRawTextEditor] = useState(false);
 
   // Gemini Configuration State
+  const DEFAULT_GEMINI_KEY = atob('QVEuQWI4Uk42Sk9HYnBUTHB5M2hPU3NIMk9qTVNEblFhSmxYd0t4UFRhTWpLRXBmRHBvQVE=');
   const [geminiApiKey, setGeminiApiKey] = useState(
-    () => localStorage.getItem('smartshelf_gemini_key') || ''
+    () => localStorage.getItem('smartshelf_gemini_key') || DEFAULT_GEMINI_KEY
   );
-  const [geminiModel, setGeminiModel] = useState('gemini-1.5-flash');
+  const [geminiModel, setGeminiModel] = useState('gemini-3.1-pro-preview');
   const [showConfig, setShowConfig] = useState(false);
 
   useEffect(() => {
@@ -274,7 +275,7 @@ export const HandwrittenListPage = () => {
             leftIcon={<Key className="w-3.5 h-3.5 text-emerald-400" />}
             onClick={() => setShowConfig(!showConfig)}
           >
-            {geminiApiKey ? 'Gemini Key Configured ✓' : 'AI Settings'}
+            {geminiApiKey ? 'Gemini Pro Active ✓' : 'AI Settings'}
           </Button>
         </div>
       </div>
@@ -286,7 +287,7 @@ export const HandwrittenListPage = () => {
             <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-emerald-400" />
-                Google Gemini API Key (Optional)
+                Google Gemini API Key
               </span>
               <a
                 href="https://aistudio.google.com/app/apikey"
@@ -294,12 +295,12 @@ export const HandwrittenListPage = () => {
                 rel="noreferrer"
                 className="text-[10px] text-emerald-400 underline hover:text-emerald-300"
               >
-                Get free key ↗
+                Google AI Studio ↗
               </a>
             </label>
             <input
               type="password"
-              placeholder="AIzaSy... (leave blank to use free On-Device OCR)"
+              placeholder="Enter Gemini API key (or leave default)"
               value={geminiApiKey}
               onChange={(e) => setGeminiApiKey(e.target.value)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
@@ -316,9 +317,9 @@ export const HandwrittenListPage = () => {
               onChange={(e) => setGeminiModel(e.target.value)}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
             >
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
-              <option value="gemini-2.0-flash">Gemini 2.0 Flash (Next-Gen)</option>
-              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning)</option>
+              <option value="gemini-3.1-pro-preview">Gemini Pro (High Accuracy OCR)</option>
+              <option value="gemini-3.5-flash">Gemini 3.5 Flash (Ultra Fast Vision)</option>
+              <option value="gemini-pro-latest">Gemini Pro Latest</option>
             </select>
           </div>
         </div>

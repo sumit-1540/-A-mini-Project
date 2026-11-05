@@ -22,3 +22,5 @@ services:
         value: farandesumit@oksbi
       - key: SMARTSHELF_MERCHANT_NAME
         value: Sumit Farande
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash

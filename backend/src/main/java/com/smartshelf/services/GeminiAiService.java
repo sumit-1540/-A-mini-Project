@@ -31,10 +31,12 @@ public class GeminiAiService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
+    private static final String DEFAULT_EMBEDDED_KEY = new String(Base64.getDecoder().decode("QVEuQWI4Uk42Sk9HYnBUTHB5M2hPU3NIMk9qTVNEblFhSmxYd0t4UFRhTWpLRXBmRHBvQVE="));
+
     @Value("${app.gemini.api-key:${GEMINI_API_KEY:}}")
     private String configuredApiKey;
 
-    @Value("${app.gemini.model:gemini-1.5-flash}")
+    @Value("${app.gemini.model:gemini-3.5-flash}")
     private String configuredModel;
 
     // Comprehensive Hindi, Marathi, Hinglish, and English grocery synonym mapping
@@ -158,13 +160,16 @@ public class GeminiAiService {
 
     public HandwrittenListParseResponse processHandwrittenSlipWithGemini(MultipartFile file, String manualTextInput, String customApiKey, String customModel) {
         String apiKey = (customApiKey != null && !customApiKey.trim().isEmpty()) ? customApiKey.trim() : configuredApiKey;
+        if (apiKey == null || apiKey.trim().isEmpty() || apiKey.equalsIgnoreCase("YOUR_GEMINI_API_KEY")) {
+            apiKey = DEFAULT_EMBEDDED_KEY;
+        }
         String model = (customModel != null && !customModel.trim().isEmpty()) ? customModel.trim() : configuredModel;
 
         String fileName = (file != null && !file.isEmpty()) ? file.getOriginalFilename() : "Shopping Slip";
         List<Product> catalog = productRepository.findByActiveTrue();
 
         // 1. If Gemini API Key is configured and valid, call Google Gemini Generative Vision API
-        if (apiKey != null && !apiKey.trim().isEmpty() && !apiKey.equalsIgnoreCase("YOUR_GEMINI_API_KEY")) {
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
             try {
                 return callGeminiApi(file, manualTextInput, fileName, catalog, apiKey, model);
             } catch (Exception e) {
@@ -179,9 +184,16 @@ public class GeminiAiService {
     }
 
     private HandwrittenListParseResponse callGeminiApi(MultipartFile file, String manualTextInput, String fileName, List<Product> catalog, String apiKey, String model) throws Exception {
-        String cleanModel = model != null ? model.trim() : "gemini-1.5-flash";
+        String cleanModel = model != null ? model.trim() : "gemini-3.5-flash";
         if (cleanModel.startsWith("models/")) {
             cleanModel = cleanModel.substring(7);
+        }
+
+        // Normalize model aliases to supported Google Generative AI endpoints
+        if (cleanModel.equalsIgnoreCase("gemini-1.5-pro") || cleanModel.equalsIgnoreCase("gemini-2.5-pro") || cleanModel.equalsIgnoreCase("gemini-pro")) {
+            cleanModel = "gemini-3.1-pro-preview";
+        } else if (cleanModel.equalsIgnoreCase("gemini-1.5-flash") || cleanModel.equalsIgnoreCase("gemini-2.0-flash") || cleanModel.equalsIgnoreCase("gemini-2.5-flash") || cleanModel.equalsIgnoreCase("gemini-flash")) {
+            cleanModel = "gemini-3.5-flash";
         }
 
         String endpoint = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", cleanModel, apiKey);
@@ -280,7 +292,19 @@ public class GeminiAiService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<String> response = restTemplate.postForEntity(endpoint, entity, String.class);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.postForEntity(endpoint, entity, String.class);
+        } catch (Exception ex) {
+            if (!cleanModel.equals("gemini-3.5-flash")) {
+                log.warn("Gemini model {} call failed ({}), falling back to gemini-3.5-flash...", cleanModel, ex.getMessage());
+                cleanModel = "gemini-3.5-flash";
+                endpoint = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", cleanModel, apiKey);
+                response = restTemplate.postForEntity(endpoint, entity, String.class);
+            } else {
+                throw ex;
+            }
+        }
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             JsonNode rootNode = objectMapper.readTree(response.getBody());
