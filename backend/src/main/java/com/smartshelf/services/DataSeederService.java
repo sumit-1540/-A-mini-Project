@@ -53,6 +53,14 @@ public class DataSeederService implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         if (userRepository.count() > 0) {
+            // Always ensure root admin account remains active
+            userRepository.findByUsername("admin").ifPresent(adminUser -> {
+                if (!adminUser.isActive()) {
+                    adminUser.setActive(true);
+                    userRepository.save(adminUser);
+                    log.info("Self-healed deactivated admin user account to active.");
+                }
+            });
             enrichExistingProductsWithImagesAndMoreData();
             log.info("Database already seeded. Enriched existing products with images and catalog items.");
             return;
@@ -162,6 +170,9 @@ public class DataSeederService implements CommandLineRunner {
 
         Product p12 = createProductHelper("Maggi 2-Minute Masala Noodles (Pack of 12)", "SKU-MAG-012", "890103012", snacks, "Nestle", "pack",
                 new BigDecimal("150.00"), new BigDecimal("180.00"), 3, 15, today.plusMonths(4), s1, "Aisle 4", "Shelf D2"); // Low stock
+
+        Product p13 = createProductHelper("Madhur Pure & Hygienic Sugar 1kg", "SKU-SUG-025", "890103025", grains, "Madhur", "pkt",
+                new BigDecimal("44.00"), new BigDecimal("52.00"), 80, 20, today.plusMonths(24), s1, "Aisle 1", "Shelf A5");
 
         // 5. Customers
         Customer c1 = customerRepository.save(Customer.builder()
@@ -372,6 +383,10 @@ public class DataSeederService implements CommandLineRunner {
             if (grains != null && !productRepository.existsBySku("SKU-OAT-024")) {
                 createProductHelper("Quaker Rolled Wholegrain Oats 1kg", "SKU-OAT-024", "890103024", grains, "Quaker", "pack",
                         new BigDecimal("160.00"), new BigDecimal("205.00"), 34, 8, today.plusMonths(12), supplier, "Aisle 1", "Shelf A4");
+            }
+            if (grains != null && !productRepository.existsBySku("SKU-SUG-025")) {
+                createProductHelper("Madhur Pure & Hygienic Sugar 1kg", "SKU-SUG-025", "890103025", grains, "Madhur", "pkt",
+                        new BigDecimal("44.00"), new BigDecimal("52.00"), 80, 20, today.plusMonths(24), supplier, "Aisle 1", "Shelf A5");
             }
         }
     }

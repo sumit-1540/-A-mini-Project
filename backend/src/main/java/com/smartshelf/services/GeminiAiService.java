@@ -37,70 +37,113 @@ public class GeminiAiService {
     @Value("${app.gemini.model:gemini-1.5-flash}")
     private String configuredModel;
 
-    // Comprehensive Hindi, Hinglish and English grocery synonym mapping
+    // Comprehensive Hindi, Marathi, Hinglish, and English grocery synonym mapping
     private static final Map<String, List<String>> GROCERY_SYNONYMS = new HashMap<>();
 
     static {
+        // Dairy & Milk
         addSynonym("doodh", "milk", "taaza", "toned");
+        addSynonym("dudh", "milk", "taaza", "toned");
+        addSynonym("dudha", "milk", "taaza", "toned");
         addSynonym("milk", "doodh", "taaza", "toned");
+
+        // Rice & Grains
         addSynonym("chawal", "rice", "basmati", "biryani");
+        addSynonym("tandul", "rice", "basmati", "chawal");
         addSynonym("rice", "chawal", "basmati", "biryani");
+        addSynonym("basmati", "rice", "chawal");
+
+        // Atta & Flour
         addSynonym("aata", "atta", "flour", "sharbati");
         addSynonym("atta", "aata", "flour", "sharbati");
-        addSynonym("gehu", "atta", "flour");
-        addSynonym("namak", "salt", "tata");
-        addSynonym("salt", "namak", "tata");
-        addSynonym("chini", "sugar", "madhur");
-        addSynonym("shakkar", "sugar", "madhur");
-        addSynonym("shakar", "sugar", "madhur");
-        addSynonym("sugar", "chini", "shakkar", "madhur");
-        addSynonym("tel", "oil", "sunflower", "mustard", "refined");
-        addSynonym("oil", "tel", "sunflower", "refined", "mustard");
+        addSynonym("gehu", "atta", "flour", "sharbati");
+        addSynonym("flour", "atta", "aata", "sharbati");
+
+        // Salt
+        addSynonym("namak", "salt", "mith");
+        addSynonym("mith", "salt", "namak");
+        addSynonym("salt", "namak", "mith");
+
+        // Sugar
+        addSynonym("chini", "sugar", "sakhar", "shakkar");
+        addSynonym("shakkar", "sugar", "chini", "sakhar");
+        addSynonym("sakhar", "sugar", "chini", "shakkar");
+        addSynonym("sugar", "sakhar", "chini", "shakkar");
+
+        // Cooking Oil
+        addSynonym("tel", "oil", "sunflower", "refined", "sunlite");
+        addSynonym("oil", "tel", "sunflower", "refined", "sunlite");
         addSynonym("sarson", "mustard", "oil", "tel");
-        addSynonym("chai", "tea", "red label");
-        addSynonym("tea", "chai", "red label");
+        addSynonym("sunflower", "oil", "sunlite", "refined");
+
+        // Tea
+        addSynonym("chai", "tea", "chaha", "patti");
+        addSynonym("chaha", "tea", "chai", "patti");
+        addSynonym("tea", "chai", "chaha", "patti");
         addSynonym("patti", "tea", "chai");
-        addSynonym("sabun", "soap", "dettol", "bathing");
-        addSynonym("soap", "sabun", "dettol", "bathing");
-        addSynonym("surf", "detergent", "excel", "powder");
-        addSynonym("detergent", "surf", "excel", "powder");
-        addSynonym("nirma", "detergent", "surf");
-        addSynonym("tide", "detergent", "surf");
-        addSynonym("ariel", "detergent", "surf");
-        addSynonym("biskut", "biscuit", "biscuits", "parle", "cookies", "good day");
-        addSynonym("biscuit", "biskut", "parle", "cookies", "good day");
-        addSynonym("biscuits", "biskut", "parle", "cookies", "good day");
-        addSynonym("cookie", "cookies", "biscuit", "good day");
-        addSynonym("cookies", "cookie", "biscuit", "good day");
-        addSynonym("makkhan", "butter", "amul");
-        addSynonym("makhan", "butter", "amul");
-        addSynonym("butter", "makhan", "makkhan", "amul");
-        addSynonym("ghee", "desi ghee", "amul ghee");
+
+        // Bath Soap
+        addSynonym("sabun", "soap", "bathing");
+        addSynonym("soap", "sabun", "bathing");
+
+        // Detergent
+        addSynonym("surf", "detergent", "powder", "easy wash");
+        addSynonym("detergent", "surf", "powder", "easy wash");
+        addSynonym("nirma", "detergent", "surf", "powder");
+        addSynonym("tide", "detergent", "surf", "powder");
+        addSynonym("ariel", "detergent", "surf", "powder");
+
+        // Biscuits & Cookies
+        addSynonym("biskut", "biscuit", "biscuits", "cookies");
+        addSynonym("biscuit", "biscuits", "biskut", "cookies");
+        addSynonym("biscuits", "biscuit", "biskut", "cookies");
+        addSynonym("cookie", "cookies", "biscuit");
+        addSynonym("cookies", "cookie", "biscuit");
+
+        // Butter
+        addSynonym("makkhan", "butter", "pasteurized");
+        addSynonym("makhan", "butter", "pasteurized");
+        addSynonym("butter", "makhan", "makkhan", "pasteurized");
+
+        // Ghee
+        addSynonym("ghee", "desi ghee", "tup");
+        addSynonym("tup", "ghee", "desi ghee");
+
+        // Eggs
         addSynonym("ande", "egg", "eggs", "brown eggs");
         addSynonym("anda", "egg", "eggs", "brown eggs");
-        addSynonym("egg", "ande", "eggs");
-        addSynonym("eggs", "ande", "egg");
+        addSynonym("egg", "ande", "eggs", "brown eggs");
+        addSynonym("eggs", "ande", "egg", "brown eggs");
+
+        // Noodles
         addSynonym("noodle", "noodles", "maggi");
         addSynonym("noodles", "noodle", "maggi");
         addSynonym("maggi", "noodles", "masala noodles");
-        addSynonym("chips", "lays", "wafers");
-        addSynonym("coffee", "nescafe", "instant coffee");
-        addSynonym("nescafe", "coffee", "instant coffee");
-        addSynonym("coke", "coca-cola", "cola", "cold drink");
-        addSynonym("cola", "coca-cola", "coke");
-        addSynonym("paste", "toothpaste", "colgate");
-        addSynonym("toothpaste", "colgate", "paste");
-        addSynonym("colgate", "toothpaste", "paste");
-        addSynonym("bartan", "dishwash", "vim");
-        addSynonym("dishwash", "vim", "bartan");
-        addSynonym("vim", "dishwash", "bartan");
-        addSynonym("dal", "toor", "tuvar", "daal", "pulses", "sampann");
+
+        // Snacks
+        addSynonym("chips", "wafers", "namkeen");
+
+        // Coffee
+        addSynonym("coffee", "instant coffee");
+
+        // Toothpaste
+        addSynonym("paste", "toothpaste", "dental");
+        addSynonym("toothpaste", "paste", "dental");
+
+        // Dishwash
+        addSynonym("bartan", "dishwash", "gel");
+        addSynonym("dishwash", "bartan", "gel");
+
+        // Pulses / Dal
+        addSynonym("dal", "toor", "tuvar", "daal", "pulses", "arhar");
         addSynonym("daal", "toor", "dal", "pulses");
         addSynonym("toor", "dal", "daal", "tuvar");
-        addSynonym("oats", "quaker", "cereal");
-        addSynonym("paneer", "malai paneer", "amul");
-        addSynonym("kurkure", "crunchy", "snack");
-        addSynonym("masala", "garam masala", "everest");
+        addSynonym("tuvar", "toor", "dal", "daal");
+
+        // Spices & Oats
+        addSynonym("oats", "wholegrain", "cereal");
+        addSynonym("paneer", "malai paneer");
+        addSynonym("masala", "garam masala");
     }
 
     private static void addSynonym(String key, String... values) {
@@ -117,24 +160,31 @@ public class GeminiAiService {
         String apiKey = (customApiKey != null && !customApiKey.trim().isEmpty()) ? customApiKey.trim() : configuredApiKey;
         String model = (customModel != null && !customModel.trim().isEmpty()) ? customModel.trim() : configuredModel;
 
-        String fileName = (file != null && !file.isEmpty()) ? file.getOriginalFilename() : "Direct Input Shopping Slip";
+        String fileName = (file != null && !file.isEmpty()) ? file.getOriginalFilename() : "Shopping Slip";
         List<Product> catalog = productRepository.findByActiveTrue();
 
-        // If Gemini API Key is available, call Google Gemini Generative Vision API
+        // 1. If Gemini API Key is configured and valid, call Google Gemini Generative Vision API
         if (apiKey != null && !apiKey.trim().isEmpty() && !apiKey.equalsIgnoreCase("YOUR_GEMINI_API_KEY")) {
             try {
                 return callGeminiApi(file, manualTextInput, fileName, catalog, apiKey, model);
             } catch (Exception e) {
-                log.error("Gemini API call failed, falling back to local intelligent matcher: {}", e.getMessage(), e);
+                log.error("Gemini API call failed, switching to local intelligent matcher: {}", e.getMessage(), e);
+                // Fall back gracefully to local catalog matcher with clear indicator of the error
+                return processLocalIntelligentFallback(file, manualTextInput, fileName, catalog, "SmartShelf Fallback Parser (Gemini: " + e.getMessage() + ")");
             }
         }
 
-        // Native Intelligent Fallback Parser
-        return processLocalIntelligentFallback(file, manualTextInput, fileName, catalog, "Google Gemini AI (Catalog Matcher)");
+        // 2. Client/Server Intelligent Local Parser
+        return processLocalIntelligentFallback(file, manualTextInput, fileName, catalog, "SmartShelf Intelligent Inventory Matcher");
     }
 
     private HandwrittenListParseResponse callGeminiApi(MultipartFile file, String manualTextInput, String fileName, List<Product> catalog, String apiKey, String model) throws Exception {
-        String endpoint = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", model, apiKey);
+        String cleanModel = model != null ? model.trim() : "gemini-1.5-flash";
+        if (cleanModel.startsWith("models/")) {
+            cleanModel = cleanModel.substring(7);
+        }
+
+        String endpoint = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", cleanModel, apiKey);
 
         // Build Catalog context for Gemini
         StringBuilder catalogContext = new StringBuilder();
@@ -188,7 +238,25 @@ public class GeminiAiService {
         if (file != null && !file.isEmpty()) {
             byte[] imageBytes = file.getBytes();
             String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-            String mimeType = file.getContentType() != null ? file.getContentType() : "image/jpeg";
+
+            String rawMime = file.getContentType();
+            String mimeType = "image/jpeg";
+            if (rawMime != null && !rawMime.isBlank() && !rawMime.equals("application/octet-stream")) {
+                if (rawMime.equalsIgnoreCase("image/jpg") || rawMime.equalsIgnoreCase("image/pjpeg")) {
+                    mimeType = "image/jpeg";
+                } else if (rawMime.equalsIgnoreCase("image/x-png") || rawMime.equalsIgnoreCase("image/png")) {
+                    mimeType = "image/png";
+                } else if (rawMime.equalsIgnoreCase("image/webp")) {
+                    mimeType = "image/webp";
+                } else {
+                    mimeType = rawMime;
+                }
+            } else {
+                String orig = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
+                if (orig.endsWith(".png")) mimeType = "image/png";
+                else if (orig.endsWith(".webp")) mimeType = "image/webp";
+                else mimeType = "image/jpeg";
+            }
 
             Map<String, Object> inlineData = new HashMap<>();
             inlineData.put("mimeType", mimeType);
@@ -217,18 +285,40 @@ public class GeminiAiService {
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             JsonNode rootNode = objectMapper.readTree(response.getBody());
             JsonNode candidate = rootNode.path("candidates").path(0).path("content").path("parts").path(0).path("text");
-            String jsonText = candidate.asText();
+            if (candidate.isMissingNode() || candidate.asText().isBlank()) {
+                throw new RuntimeException("Empty response received from Gemini AI model");
+            }
+            String rawOutput = candidate.asText().trim();
 
-            // Robust JSON extraction (between first '{' and last '}')
-            int firstBrace = jsonText.indexOf('{');
-            int lastBrace = jsonText.lastIndexOf('}');
-            if (firstBrace != -1 && lastBrace > firstBrace) {
-                jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+            // Strip Markdown fences e.g. ```json ... ```
+            if (rawOutput.startsWith("```json")) {
+                rawOutput = rawOutput.substring(7);
+            } else if (rawOutput.startsWith("```")) {
+                rawOutput = rawOutput.substring(3);
+            }
+            if (rawOutput.endsWith("```")) {
+                rawOutput = rawOutput.substring(0, rawOutput.length() - 3);
+            }
+            rawOutput = rawOutput.trim();
+
+            // Robust JSON extraction (find first '{' or '[' and matching closing bracket)
+            int firstBrace = rawOutput.indexOf('{');
+            int lastBrace = rawOutput.lastIndexOf('}');
+            int firstBracket = rawOutput.indexOf('[');
+            int lastBracket = rawOutput.lastIndexOf(']');
+
+            String jsonText = rawOutput;
+            if (firstBrace != -1 && lastBrace > firstBrace && (firstBracket == -1 || firstBrace < firstBracket)) {
+                jsonText = rawOutput.substring(firstBrace, lastBrace + 1);
+            } else if (firstBracket != -1 && lastBracket > firstBracket) {
+                jsonText = rawOutput.substring(firstBracket, lastBracket + 1);
             }
             jsonText = jsonText.trim();
 
             JsonNode geminiResult = objectMapper.readTree(jsonText);
-            String rawExtractedText = geminiResult.path("rawExtractedText").asText(manualTextInput != null ? manualTextInput : "");
+            String rawExtractedText = geminiResult.has("rawExtractedText")
+                    ? geminiResult.path("rawExtractedText").asText()
+                    : (manualTextInput != null ? manualTextInput : "");
 
             List<ParsedListItemDTO> parsedItems = new ArrayList<>();
             BigDecimal estimatedTotal = BigDecimal.ZERO;
@@ -239,25 +329,26 @@ public class GeminiAiService {
                 productMap.put(p.getId(), p);
             }
 
-            JsonNode itemsNode = geminiResult.path("items");
+            // Handle both JSON Object with "items" and root JSON Array
+            JsonNode itemsNode = geminiResult.isArray() ? geminiResult : geminiResult.path("items");
             if (itemsNode.isArray()) {
                 for (JsonNode itemNode : itemsNode) {
                     String rawText = itemNode.path("rawText").asText();
                     String extractedName = itemNode.path("extractedProductName").asText();
                     int qty = itemNode.path("extractedQuantity").asInt(1);
+                    if (qty <= 0) qty = 1;
                     String unit = itemNode.path("extractedUnit").asText("pcs");
                     Long matchedId = itemNode.hasNonNull("matchedProductId") ? itemNode.path("matchedProductId").asLong() : null;
-                    double confidence = itemNode.path("matchConfidence").asDouble(0.9);
+                    double confidence = itemNode.path("matchConfidence").asDouble(0.95);
 
                     Product matchedProduct = matchedId != null ? productMap.get(matchedId) : null;
                     if (matchedProduct == null) {
-                        // High-accuracy fallback matcher
                         matchedProduct = findBestCatalogProduct(extractedName != null && !extractedName.isBlank() ? extractedName : rawText, catalog);
                     }
 
                     ParsedListItemDTO itemDTO = ParsedListItemDTO.builder()
                             .rawText(rawText)
-                            .extractedProductName(extractedName)
+                            .extractedProductName(extractedName != null && !extractedName.isBlank() ? extractedName : (matchedProduct != null ? matchedProduct.getName() : rawText))
                             .extractedQuantity(qty)
                             .extractedUnit(unit)
                             .found(matchedProduct != null)
@@ -281,6 +372,14 @@ public class GeminiAiService {
                 }
             }
 
+            if (rawExtractedText.isBlank() && !parsedItems.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (ParsedListItemDTO item : parsedItems) {
+                    sb.append(item.getRawText() != null && !item.getRawText().isBlank() ? item.getRawText() : item.getExtractedProductName()).append("\n");
+                }
+                rawExtractedText = sb.toString().trim();
+            }
+
             List<String> unmatchedLines = new ArrayList<>();
             JsonNode unmatchedNode = geminiResult.path("unmatchedLines");
             if (unmatchedNode.isArray()) {
@@ -297,36 +396,27 @@ public class GeminiAiService {
                     .estimatedTotal(estimatedTotal)
                     .items(parsedItems)
                     .unmatchedLines(unmatchedLines)
-                    .aiModelUsed("Google Gemini " + model + " (Vision AI)")
+                    .aiModelUsed("Google Gemini " + cleanModel + " (Vision AI)")
                     .build();
         }
 
         throw new RuntimeException("Unexpected response from Gemini API: " + response.getStatusCode());
     }
 
-    private HandwrittenListParseResponse processLocalIntelligentFallback(MultipartFile file, String manualTextInput, String fileName, List<Product> catalog, String modelName) {
-        String extractedText = manualTextInput;
-        if (extractedText == null || extractedText.trim().isEmpty()) {
-            if (file != null && !file.isEmpty()) {
-                extractedText = "1. Basmati Rice 5kg\n" +
-                        "2. Aashirvaad Atta 10kg\n" +
-                        "3. Tata Salt 1kg\n" +
-                        "4. Amul Butter 500g\n" +
-                        "5. Amul Milk 2L\n" +
-                        "6. Fortune Oil 1L\n" +
-                        "7. Red Label Tea 500g\n" +
-                        "8. Maggi Noodles 1 pack";
-            } else {
-                extractedText = "1. Basmati Rice 5kg\n" +
-                        "2. Aashirvaad Atta 10kg\n" +
-                        "3. Tata Salt 1kg\n" +
-                        "4. Amul Butter 500g\n" +
-                        "5. Amul Milk 2L\n" +
-                        "6. Fortune Sunflower Oil 1L\n" +
-                        "7. Red Label Tea 500g\n" +
-                        "8. Parle G 1kg\n" +
-                        "9. Maggi Noodles 1 pack";
-            }
+    public HandwrittenListParseResponse processLocalIntelligentFallback(MultipartFile file, String manualTextInput, String fileName, List<Product> catalog, String modelName) {
+        String extractedText = manualTextInput != null ? manualTextInput.trim() : "";
+
+        // If no text was provided at all and no file was uploaded, populate demo items
+        if (extractedText.isEmpty() && (file == null || file.isEmpty())) {
+            extractedText = "1. Basmati Rice 5kg\n" +
+                    "2. Aashirvaad Atta 10kg\n" +
+                    "3. Tata Salt 1kg\n" +
+                    "4. Amul Butter 500g\n" +
+                    "5. Amul Milk 2L\n" +
+                    "6. Fortune Sunflower Oil 1L\n" +
+                    "7. Red Label Tea 500g\n" +
+                    "8. Parle G 1kg\n" +
+                    "9. Maggi Noodles 1 pack";
         }
 
         List<ParsedListItemDTO> parsedItems = new ArrayList<>();
@@ -339,8 +429,8 @@ public class GeminiAiService {
             String line = rawLine.trim();
             if (line.isEmpty()) continue;
 
-            // Remove leading bullet/numbering
-            String cleanedLine = line.replaceFirst("^(\\d+[.)-]\\s*|[•\\-*–]\\s*)", "").trim();
+            // Remove leading bullet/numbering e.g. "1.", "1)", "1 -", "-", "•"
+            String cleanedLine = line.replaceFirst("^(\\d+[.)\\-:]\\s*|[•\\-*–]\\s*)", "").trim();
 
             // Extract Quantity and Unit
             ExtractedQuantityUnit qu = parseQuantityAndUnit(cleanedLine);
@@ -381,6 +471,10 @@ public class GeminiAiService {
             parsedItems.add(itemDTO);
         }
 
+        if (parsedItems.isEmpty() && file != null && !file.isEmpty()) {
+            unmatched.add("Slip image received: transcribe using Tesseract OCR or enter items above.");
+        }
+
         return HandwrittenListParseResponse.builder()
                 .originalFileName(fileName)
                 .rawExtractedText(extractedText)
@@ -402,14 +496,18 @@ public class GeminiAiService {
             String l = rawLine.trim();
             if (l.isEmpty()) continue;
 
-            // If line contains multiple items separated by comma followed by numbering e.g. "1. Rice 5kg, 2. Atta 10kg"
-            if (l.matches(".*,\\s*\\d+[.)].*")) {
+            // If line contains multiple items separated by numbering e.g. "1. Rice 5kg 2. Sugar 1kg"
+            if (l.matches(".*\\b\\d+[.)]\\s+.*\\b\\d+[.)]\\s+.*")) {
+                String[] parts = l.split("(?=\\b\\d+[.)]\\s+)");
+                for (String p : parts) {
+                    if (!p.trim().isEmpty()) result.add(p.trim());
+                }
+            } else if (l.matches(".*,\\s*\\d+[.)].*")) {
                 String[] parts = l.split(",\\s*(?=\\d+[.)])");
                 for (String p : parts) {
                     if (!p.trim().isEmpty()) result.add(p.trim());
                 }
             } else if (l.contains(",") && !l.toLowerCase().contains("buy") && !l.toLowerCase().contains("pack")) {
-                // If comma-separated list like "Rice 5kg, Sugar 1kg, Milk 1L"
                 String[] parts = l.split(",");
                 if (parts.length > 1) {
                     for (String p : parts) {
@@ -436,16 +534,14 @@ public class GeminiAiService {
         if (input == null) return res;
         String clean = input.replaceAll("[:–—]", " ").trim();
 
-        // 1. Check for suffix: "Rice 5kg", "Rice - 5 kg", "Tata Salt 2 packets"
-        Pattern suffixPattern = Pattern.compile("(.*?)[\\s\\-–]+(\\d+)\\s*(kg|kgs|kilo|kilos|g|gm|gms|gram|grams|l|ltr|ltrs|litre|litres|ml|pkt|pkts|packet|packets|pack|packs|pcs|pieces|pc|tin|tins|can|cans|jar|jars|bottle|bottles|dozen|darjan)?$", Pattern.CASE_INSENSITIVE);
+        // 1. Check for suffix: "Rice 5kg", "Rice 1.5 kg", "Tata Salt 2 packets"
+        Pattern suffixPattern = Pattern.compile("(.*?)[\\s\\-–]+(\\d+(?:\\.\\d+)?(?:/\\d+)?)\\s*(kg|kgs|kilo|kilos|g|gm|gms|gram|grams|l|ltr|ltrs|litre|litres|ml|pkt|pkts|packet|packets|pack|packs|pcs|pieces|pc|tin|tins|can|cans|jar|jars|bottle|bottles|dozen|darjan)?$", Pattern.CASE_INSENSITIVE);
         Matcher mSuffix = suffixPattern.matcher(clean);
         if (mSuffix.find()) {
             String name = mSuffix.group(1).trim();
             if (!name.isEmpty()) {
                 res.productName = name;
-                try {
-                    res.quantity = Integer.parseInt(mSuffix.group(2));
-                } catch (Exception ignored) {}
+                res.quantity = parseQuantityValue(mSuffix.group(2));
                 if (mSuffix.group(3) != null) {
                     res.unit = normalizeUnit(mSuffix.group(3));
                 }
@@ -453,13 +549,11 @@ public class GeminiAiService {
             }
         }
 
-        // 2. Check for prefix: "5kg Rice", "5 kg Rice", "2 packets of Milk", "1 dozen eggs"
-        Pattern prefixPattern = Pattern.compile("^(\\d+)\\s*(kg|kgs|kilo|kilos|g|gm|gms|gram|grams|l|ltr|ltrs|litre|litres|ml|pkt|pkts|packet|packets|pack|packs|pcs|pieces|pc|tin|tins|can|cans|jar|jars|bottle|bottles|dozen|darjan)?\\s+(?:of\\s+)?(.*?)$", Pattern.CASE_INSENSITIVE);
+        // 2. Check for prefix: "5kg Rice", "1.5 kg Rice", "2 packets Milk", "1 dozen eggs"
+        Pattern prefixPattern = Pattern.compile("^(\\d+(?:\\.\\d+)?(?:/\\d+)?)\\s*(kg|kgs|kilo|kilos|g|gm|gms|gram|grams|l|ltr|ltrs|litre|litres|ml|pkt|pkts|packet|packets|pack|packs|pcs|pieces|pc|tin|tins|can|cans|jar|jars|bottle|bottles|dozen|darjan)?\\s+(?:of\\s+)?(.*?)$", Pattern.CASE_INSENSITIVE);
         Matcher mPrefix = prefixPattern.matcher(clean);
         if (mPrefix.find()) {
-            try {
-                res.quantity = Integer.parseInt(mPrefix.group(1));
-            } catch (Exception ignored) {}
+            res.quantity = parseQuantityValue(mPrefix.group(1));
             if (mPrefix.group(2) != null) {
                 res.unit = normalizeUnit(mPrefix.group(2));
             }
@@ -468,12 +562,10 @@ public class GeminiAiService {
         }
 
         // 3. Fallback: general number search
-        Pattern generalPattern = Pattern.compile("(\\d+)\\s*(kg|kgs|g|gm|l|ltr|pkt|pack|pcs)?", Pattern.CASE_INSENSITIVE);
+        Pattern generalPattern = Pattern.compile("(\\d+(?:\\.\\d+)?(?:/\\d+)?)\\s*(kg|kgs|g|gm|l|ltr|pkt|pack|pcs)?", Pattern.CASE_INSENSITIVE);
         Matcher mGen = generalPattern.matcher(clean);
         if (mGen.find()) {
-            try {
-                res.quantity = Integer.parseInt(mGen.group(1));
-            } catch (Exception ignored) {}
+            res.quantity = parseQuantityValue(mGen.group(1));
             if (mGen.group(2) != null) {
                 res.unit = normalizeUnit(mGen.group(2));
             }
@@ -484,6 +576,22 @@ public class GeminiAiService {
 
         res.productName = clean;
         return res;
+    }
+
+    private int parseQuantityValue(String raw) {
+        if (raw == null || raw.isBlank()) return 1;
+        try {
+            if (raw.contains("/")) {
+                String[] parts = raw.split("/");
+                double num = Double.parseDouble(parts[0]);
+                double den = Double.parseDouble(parts[1]);
+                return (int) Math.max(1, Math.round(num / den));
+            }
+            double val = Double.parseDouble(raw);
+            return (int) Math.max(1, Math.round(val));
+        } catch (Exception e) {
+            return 1;
+        }
     }
 
     private String normalizeUnit(String rawUnit) {
@@ -507,7 +615,7 @@ public class GeminiAiService {
         if (query == null || query.trim().isEmpty() || catalog == null || catalog.isEmpty()) return null;
 
         String cleanQuery = query.toLowerCase()
-                .replaceAll("[-_•*.,/()\\[\\]:]", " ")
+                .replaceAll("[-_•*.,/()\\[\\]:;!?]", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
 
@@ -524,14 +632,23 @@ public class GeminiAiService {
             String pBrand = product.getBrand() != null ? product.getBrand().toLowerCase() : "";
             String pCat = product.getCategory() != null ? product.getCategory().getName().toLowerCase() : "";
 
-            // 1. Direct exact or substring containment
-            if (pName.contains(cleanQuery) || cleanQuery.contains(pName) || pSku.contains(cleanQuery)) {
+            // 1. Exact match
+            if (pName.equalsIgnoreCase(cleanQuery) || pSku.equalsIgnoreCase(cleanQuery)) {
                 return product;
+            }
+
+            // 2. Direct substring containment (prioritize when query >= 4 chars)
+            if (cleanQuery.length() >= 4 && pName.contains(cleanQuery)) {
+                double containmentScore = 1.6 + ((double) cleanQuery.length() / pName.length());
+                if (containmentScore > highestScore) {
+                    highestScore = containmentScore;
+                    bestProduct = product;
+                }
             }
 
             double score = 0.0;
 
-            // 2. Token by token matching with synonym expansion
+            // 3. Token by token matching with synonym expansion
             for (String token : queryTokens) {
                 if (token.length() <= 1) continue;
 
@@ -549,23 +666,27 @@ public class GeminiAiService {
                     tokenMatched = true;
                 }
 
-                // Check Synonyms if not directly matched
-                if (!tokenMatched && GROCERY_SYNONYMS.containsKey(token)) {
+                // Check Synonyms
+                if (GROCERY_SYNONYMS.containsKey(token)) {
                     List<String> synonyms = GROCERY_SYNONYMS.get(token);
-                    for (String syn : synonyms) {
-                        if (pName.contains(syn) || pBrand.contains(syn) || pCat.contains(syn)) {
-                            score += 0.85;
+                    for (int i = 0; i < synonyms.size(); i++) {
+                        String syn = synonyms.get(i);
+                        double weight = (i == 0) ? 1.5 : 1.0;
+                        if (pName.contains(syn)) {
+                            score += weight;
                             tokenMatched = true;
-                            break;
+                        } else if (pCat.contains(syn)) {
+                            score += (weight * 0.7);
+                            tokenMatched = true;
                         }
                     }
                 }
 
                 // Fuzzy Levenshtein match for typos (e.g. basmti -> basmati, detol -> dettol)
-                if (!tokenMatched && token.length() >= 4) {
+                if (!tokenMatched && token.length() >= 3) {
                     for (String pToken : pName.split("\\s+")) {
-                        if (pToken.length() >= 4 && computeSimilarity(token, pToken) >= 0.75) {
-                            score += 0.75;
+                        if (pToken.length() >= 3 && computeSimilarity(token, pToken) >= 0.72) {
+                            score += 0.8;
                             tokenMatched = true;
                             break;
                         }
@@ -575,7 +696,7 @@ public class GeminiAiService {
 
             // Brand Boost: If query mentions the exact brand
             if (!pBrand.isEmpty() && cleanQuery.contains(pBrand)) {
-                score += 0.5;
+                score += 0.6;
             }
 
             double normalizedScore = queryTokens.length > 0 ? (score / queryTokens.length) : 0.0;

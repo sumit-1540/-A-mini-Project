@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Plus } from 'lucide-react';
+import { UserCheck, Plus, ShieldCheck } from 'lucide-react';
 import { userService } from '../services/api';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 export const UsersPage = () => {
   const { success, error } = useToast();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,17 +42,20 @@ export const UsersPage = () => {
   };
 
   const handleToggleStatus = async (user) => {
+    if (user.username === 'admin') {
+      error("Primary store administrator account 'admin' cannot be deactivated.");
+      return;
+    }
+    if (currentUser && currentUser.id === user.id) {
+      error("You cannot deactivate your own active session.");
+      return;
+    }
     try {
-      if (user.active) {
-        await userService.deactivateUser(user.id);
-        success(`User ${user.username} deactivated.`);
-      } else {
-        await userService.activateUser(user.id);
-        success(`User ${user.username} activated.`);
-      }
+      await userService.toggleUserStatus(user.id);
+      success(`User account '${user.username}' is now ${user.active ? 'disabled' : 'active'}.`);
       loadUsers();
-    } catch {
-      error('Failed to update user status');
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to update user status');
     }
   };
 
@@ -148,13 +153,24 @@ export const UsersPage = () => {
                     </td>
 
                     <td className="px-5 py-3.5 text-right">
-                      <Button
-                        size="sm"
-                        variant={u.active ? 'ghost' : 'outline'}
-                        onClick={() => handleToggleStatus(u)}
-                      >
-                        {u.active ? 'Deactivate' : 'Enable'}
-                      </Button>
+                      {u.username === 'admin' ? (
+                        <span className="text-[11px] text-amber-400 font-semibold px-2.5 py-1 bg-amber-500/10 rounded-xl border border-amber-500/20 inline-flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5" /> Root Owner
+                        </span>
+                      ) : currentUser && currentUser.id === u.id ? (
+                        <span className="text-[11px] text-indigo-400 font-semibold px-2.5 py-1 bg-indigo-500/10 rounded-xl border border-indigo-500/20 inline-block">
+                          Active Session
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant={u.active ? 'ghost' : 'outline'}
+                          className={u.active ? 'text-rose-400 hover:text-rose-300 hover:bg-rose-950/30' : 'text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/20'}
+                          onClick={() => handleToggleStatus(u)}
+                        >
+                          {u.active ? 'Deactivate' : 'Enable'}
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}

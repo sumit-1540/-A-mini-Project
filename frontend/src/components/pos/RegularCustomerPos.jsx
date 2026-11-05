@@ -18,6 +18,7 @@ import {
   Gift,
   CheckCircle,
   Package,
+  X,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
@@ -124,11 +125,20 @@ export const RegularCustomerPos = ({
         <div>
           {customer ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
                 <CheckCircle className="w-3.5 h-3.5" /> {customer.name}
               </span>
               <Button size="sm" variant="outline" onClick={onOpenCustomerModal}>
-                Switch Customer
+                Switch
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-rose-400 hover:text-rose-300 hover:bg-rose-950/30"
+                onClick={() => setCustomer(null)}
+                title="Detach customer (switch to walk-in)"
+              >
+                <X className="w-3.5 h-3.5 mr-1" /> Detach
               </Button>
             </div>
           ) : (
@@ -163,13 +173,13 @@ export const RegularCustomerPos = ({
           <div className="sm:col-span-1">
             <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
               Outstanding Credit
-              {customer.creditBalance > 0 && <AlertTriangle className="w-3 h-3 text-rose-400" />}
+              {Number(customer.creditBalance || 0) > 0 && <AlertTriangle className="w-3 h-3 text-rose-400" />}
             </div>
-            <div className={`text-xl font-black font-mono mt-0.5 ${customer.creditBalance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-              ₹{customer.creditBalance?.toFixed(2) || '0.00'}
+            <div className={`text-xl font-black font-mono mt-0.5 ${Number(customer.creditBalance || 0) > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+              ₹{Number(customer.creditBalance || 0).toFixed(2)}
             </div>
             <div className="text-[10px] text-slate-500">
-              Limit: ₹{customer.creditLimit?.toFixed(2) || '5,000.00'}
+              Limit: ₹{Number(customer.creditLimit || 5000).toFixed(2)}
             </div>
           </div>
 

@@ -5,6 +5,7 @@ import com.smartshelf.dto.JwtResponse;
 import com.smartshelf.dto.LoginRequest;
 import com.smartshelf.dto.RegisterUserRequest;
 import com.smartshelf.dto.UserDTO;
+import com.smartshelf.exceptions.BadRequestException;
 import com.smartshelf.exceptions.DuplicateResourceException;
 import com.smartshelf.exceptions.ResourceNotFoundException;
 import com.smartshelf.models.Role;
@@ -92,6 +93,9 @@ public class AuthService {
     public UserDTO toggleUserStatus(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        if (user.getUsername().equalsIgnoreCase("admin") && user.isActive()) {
+            throw new BadRequestException("Primary store owner account 'admin' cannot be deactivated.");
+        }
         user.setActive(!user.isActive());
         user = userRepository.save(user);
         return mapToDTO(user);

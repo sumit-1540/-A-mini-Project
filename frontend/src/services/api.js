@@ -14,6 +14,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Remove default Content-Type header if sending FormData so browser sets boundary automatically
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -340,13 +344,22 @@ export const aiService = {
     return res.data;
   },
   parseHandwrittenListText: async (text, apiKey, model) => {
-    const formData = new FormData();
-    formData.append('text', text);
-    if (apiKey) formData.append('apiKey', apiKey);
-    if (model) formData.append('model', model);
-    const res = await api.post('/ai/handwritten-list', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // Prefer clean JSON endpoint for text input
+    try {
+      const res = await api.post('/ai/handwritten-list/text', { text, apiKey, model });
+      return res.data;
+    } catch {
+      // Fallback to multipart if needed
+      const formData = new FormData();
+      formData.append('text', text);
+      if (apiKey) formData.append('apiKey', apiKey);
+      if (model) formData.append('model', model);
+      const res = await api.post('/ai/handwritten-list', formData);
+      return res.data;
+    }
+  },
+  parseHandwrittenListJson: async (text, apiKey, model) => {
+    const res = await api.post('/ai/handwritten-list/text', { text, apiKey, model });
     return res.data;
   },
   uploadHandwrittenListPhoto: async (file, apiKey, model) => {
@@ -354,9 +367,7 @@ export const aiService = {
     formData.append('file', file);
     if (apiKey) formData.append('apiKey', apiKey);
     if (model) formData.append('model', model);
-    const res = await api.post('/ai/handwritten-list', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const res = await api.post('/ai/handwritten-list', formData);
     return res.data;
   },
 };

@@ -14,6 +14,8 @@ import {
   Layers,
   ArrowRight,
   Check,
+  User,
+  X,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 
@@ -22,6 +24,9 @@ export const ExpressWalkthroughPos = ({
   categories,
   cart,
   setCart,
+  customer,
+  setCustomer,
+  onOpenCustomerModal,
   onCheckout,
   isProcessing,
   onOpenUpiModal,
@@ -278,21 +283,46 @@ export const ExpressWalkthroughPos = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="w-4 h-4 text-amber-400" />
-                <span className="text-sm font-bold text-white">Walk-in Cart</span>
+                <span className="text-sm font-bold text-white">Cart</span>
                 <span className="px-2 py-0.5 rounded-full bg-slate-800 text-[10px] font-mono text-slate-300">
                   {cart.reduce((sum, item) => sum + item.quantity, 0)} items
                 </span>
               </div>
 
-              {cart.length > 0 && (
-                <button
-                  type="button"
-                  onClick={clearCart}
-                  className="text-[11px] text-slate-500 hover:text-rose-400 transition-colors"
-                >
-                  Clear Cart
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {customer ? (
+                  <div className="flex items-center gap-1 bg-indigo-500/10 text-indigo-300 px-2 py-0.5 rounded-lg border border-indigo-500/20 text-[11px]">
+                    <User className="w-3 h-3 text-indigo-400" />
+                    <span className="truncate max-w-[90px] font-medium">{customer.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCustomer && setCustomer(null)}
+                      className="text-slate-400 hover:text-rose-400"
+                      title="Detach customer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : onOpenCustomerModal ? (
+                  <button
+                    type="button"
+                    onClick={onOpenCustomerModal}
+                    className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                  >
+                    <User className="w-3 h-3" /> Attach Customer
+                  </button>
+                ) : null}
+
+                {cart.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearCart}
+                    className="text-[11px] text-slate-500 hover:text-rose-400 transition-colors ml-1"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Cart Items List */}
@@ -391,7 +421,7 @@ export const ExpressWalkthroughPos = ({
                     if (cart.length > 0) {
                       onOpenUpiModal({
                         amount: grandTotal,
-                        customer: null,
+                        customer: customer || null,
                         paymentMethod: 'UPI_QR',
                       });
                     }
@@ -471,7 +501,7 @@ export const ExpressWalkthroughPos = ({
                     onClick={() =>
                       onOpenUpiModal({
                         amount: grandTotal,
-                        customer: null,
+                        customer: customer || null,
                         paymentMethod: 'UPI_QR',
                       })
                     }
@@ -493,14 +523,14 @@ export const ExpressWalkthroughPos = ({
                 if (paymentMode === 'UPI_QR') {
                   onOpenUpiModal({
                     amount: grandTotal,
-                    customer: null,
+                    customer: customer || null,
                     paymentMethod: 'UPI_QR',
                   });
                 } else {
                   onCheckout({
                     paymentMethod: paymentMode,
                     amountPaid: cashTendered,
-                    customer: null,
+                    customer: customer || null,
                   });
                 }
               }}

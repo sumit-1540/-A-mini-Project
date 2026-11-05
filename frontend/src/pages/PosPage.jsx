@@ -4,6 +4,8 @@ import {
   Zap,
   Star,
   Barcode,
+  User,
+  X,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -85,10 +87,15 @@ export const PosPage = () => {
 
   // Load customer insight when customer is selected
   useEffect(() => {
-    if (customer) {
-      customerService.getCustomerInsights(customer.id).then((insight) => {
-        setCustomerFavorites(insight?.frequentlyPurchasedProducts || []);
-      });
+    if (customer && customer.id) {
+      customerService.getCustomerInsights(customer.id)
+        .then((insight) => {
+          setCustomerFavorites(insight?.frequentlyPurchasedProducts || []);
+        })
+        .catch((err) => {
+          console.warn('Customer insights could not be retrieved:', err);
+          setCustomerFavorites([]);
+        });
     } else {
       setCustomerFavorites([]);
     }
@@ -127,13 +134,18 @@ export const PosPage = () => {
 
       // Check for transferred items from Handwritten Shopping List
       const pendingCartJson = localStorage.getItem('smartshelf_pending_cart');
-      if (pendingCartJson && data && data.length > 0) {
+      if (pendingCartJson) {
         try {
           const pendingItems = JSON.parse(pendingCartJson);
           if (Array.isArray(pendingItems) && pendingItems.length > 0) {
+            let lookupProducts = data || [];
+            if (catId) {
+              const all = await productService.getAllProducts();
+              if (all && all.length > 0) lookupProducts = all;
+            }
             const itemsToAdd = [];
             for (const pi of pendingItems) {
-              const matchedProduct = data.find((p) => p.id === pi.productId);
+              const matchedProduct = lookupProducts.find((p) => p.id === pi.productId);
               if (matchedProduct) {
                 itemsToAdd.push({
                   product: matchedProduct,
@@ -370,12 +382,41 @@ export const PosPage = () => {
           </button>
         </div>
 
-        {/* Live Cart Snapshot on Right */}
-        <div className="hidden sm:flex items-center gap-3 text-xs text-slate-400 pr-3 font-medium">
-          <span>Active Cart:</span>
-          <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
-            {cart.reduce((s, i) => s + i.quantity, 0)} items • ₹{grandTotal.toFixed(2)}
-          </span>
+        {/* Attached Customer & Live Cart Snapshot on Right */}
+        <div className="flex items-center gap-2.5 text-xs">
+          {customer ? (
+            <div className="flex items-center gap-1.5 bg-indigo-500/10 text-indigo-300 px-3 py-1.5 rounded-xl border border-indigo-500/20">
+              <User className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="font-semibold text-white truncate max-w-[120px]">{customer.name}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomer(null);
+                  success('Detached customer. Mode set to Walk-in.');
+                }}
+                className="text-slate-400 hover:text-rose-400 p-0.5 rounded transition-colors ml-0.5"
+                title="Detach customer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsCustomerModalOpen(true)}
+              className="text-slate-400 hover:text-indigo-400 hover:bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-800 transition-colors flex items-center gap-1.5 font-medium"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Attach Customer</span>
+            </button>
+          )}
+
+          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 font-medium">
+            <span>Cart:</span>
+            <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+              {cart.reduce((s, i) => s + i.quantity, 0)} items • ₹{grandTotal.toFixed(2)}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -386,6 +427,9 @@ export const PosPage = () => {
           categories={categories}
           cart={cart}
           setCart={setCart}
+          customer={customer}
+          setCustomer={setCustomer}
+          onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
           onBarcodeScan={handleBarcodeScan}
           onCheckout={handleCheckout}
           isProcessing={isProcessing}

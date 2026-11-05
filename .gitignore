@@ -1,9 +1,10 @@
-﻿.idea
+.idea
 *.iml
 backend/target
 frontend/node_modules
 frontend/dist
 backend/data
 *.log
+*.traineddata
 .DS_Store
 Thumbs.db

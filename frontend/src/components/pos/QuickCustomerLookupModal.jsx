@@ -135,9 +135,9 @@ export const QuickCustomerLookupModal = ({
                   <div className="text-xs text-slate-400">
                     Points: <span className="text-emerald-400 font-bold">{c.rewardPoints || 0}</span>
                   </div>
-                  {c.creditBalance > 0 ? (
+                  {Number(c.creditBalance || 0) > 0 ? (
                     <Badge variant="danger" size="sm" className="mt-1">
-                      Credit: ₹{c.creditBalance?.toFixed(2)}
+                      Credit: ₹{Number(c.creditBalance || 0).toFixed(2)}
                     </Badge>
                   ) : (
                     <span className="text-[10px] text-slate-500">No Due</span>

@@ -54,20 +54,49 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/api/health/**", "/error", "/h2-console/**").permitAll()
 
                         // Operational Endpoints accessible by both Admin & Cashier
-                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**", "/api/customers/**", "/api/inventory/**").hasAnyRole("ADMIN", "CASHIER")
-                        .requestMatchers("/api/customers/**").hasAnyRole("ADMIN", "CASHIER")
-                        .requestMatchers("/api/orders/**", "/api/credits/**", "/api/payments/**").hasAnyRole("ADMIN", "CASHIER")
-                        .requestMatchers("/api/ai/handwritten-list", "/api/ai/recommendations", "/api/ai/demand-forecast", "/api/ai/ml-metrics", "/api/ai/simulate-demand").hasAnyRole("ADMIN", "CASHIER")
-                        .requestMatchers("/api/notifications/**").hasAnyRole("ADMIN", "CASHIER")
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/products", "/api/products/**",
+                                "/api/categories", "/api/categories/**",
+                                "/api/customers", "/api/customers/**",
+                                "/api/inventory", "/api/inventory/**"
+                        ).hasAnyRole("ADMIN", "CASHIER")
+                        .requestMatchers(
+                                "/api/customers", "/api/customers/**",
+                                "/api/orders", "/api/orders/**",
+                                "/api/credits", "/api/credits/**",
+                                "/api/payments", "/api/payments/**",
+                                "/api/notifications", "/api/notifications/**"
+                        ).hasAnyRole("ADMIN", "CASHIER")
+                        .requestMatchers(
+                                "/api/ai/handwritten-list", "/api/ai/handwritten-list/**",
+                                "/api/ai/recommendations", "/api/ai/demand-forecast",
+                                "/api/ai/ml-metrics", "/api/ai/simulate-demand"
+                        ).hasAnyRole("ADMIN", "CASHIER")
                         .requestMatchers(HttpMethod.GET, "/api/analytics/dashboard").hasAnyRole("ADMIN", "CASHIER")
 
                         // Admin-Only Backoffice & Executive Endpoints
-                        .requestMatchers("/api/users/**", "/api/suppliers/**", "/api/purchases/**", "/api/reports/**").hasRole("ADMIN")
-                        .requestMatchers("/api/analytics/**").hasRole("ADMIN")
-                        .requestMatchers("/api/ai/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/products/**", "/api/categories/**", "/api/inventory/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**", "/api/inventory/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**").hasRole("ADMIN")
+                        .requestMatchers(
+                                "/api/users", "/api/users/**",
+                                "/api/suppliers", "/api/suppliers/**",
+                                "/api/purchases", "/api/purchases/**",
+                                "/api/reports", "/api/reports/**"
+                        ).hasRole("ADMIN")
+                        .requestMatchers("/api/analytics", "/api/analytics/**").hasRole("ADMIN")
+                        .requestMatchers("/api/ai", "/api/ai/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/products", "/api/products/**",
+                                "/api/categories", "/api/categories/**",
+                                "/api/inventory", "/api/inventory/**"
+                        ).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT,
+                                "/api/products", "/api/products/**",
+                                "/api/categories", "/api/categories/**",
+                                "/api/inventory", "/api/inventory/**"
+                        ).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/products", "/api/products/**",
+                                "/api/categories", "/api/categories/**"
+                        ).hasRole("ADMIN")
 
                         .anyRequest().authenticated()
                 )

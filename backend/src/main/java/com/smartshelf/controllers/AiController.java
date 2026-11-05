@@ -72,4 +72,13 @@ public class AiController {
             @RequestParam(value = "model", required = false) String model) {
         return ResponseEntity.ok(handwrittenListProcessorService.processHandwrittenListWithGemini(file, text, apiKey, model));
     }
+
+    @PostMapping(value = "/handwritten-list/text", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<HandwrittenListParseResponse> parseHandwrittenListText(
+            @RequestBody HandwrittenListTextRequest request) {
+        String text = request != null ? request.getText() : "";
+        String apiKey = request != null ? request.getApiKey() : null;
+        String model = request != null ? request.getModel() : null;
+        return ResponseEntity.ok(handwrittenListProcessorService.processHandwrittenListWithGemini(null, text, apiKey, model));
+    }
 }
