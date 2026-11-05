@@ -74,6 +74,16 @@ public class SecurityConfig {
                         ).hasAnyRole("ADMIN", "CASHIER")
                         .requestMatchers(HttpMethod.GET, "/api/analytics/dashboard").hasAnyRole("ADMIN", "CASHIER")
 
+                        // Expired Stock & Shelf Maintenance accessible by both Admin & Cashier
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/inventory/discard-expired/**",
+                                "/api/inventory/discard-all-expired",
+                                "/api/inventory/adjust"
+                        ).hasAnyRole("ADMIN", "CASHIER")
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/products/**"
+                        ).hasAnyRole("ADMIN", "CASHIER")
+
                         // Admin-Only Backoffice & Executive Endpoints
                         .requestMatchers(
                                 "/api/users", "/api/users/**",
